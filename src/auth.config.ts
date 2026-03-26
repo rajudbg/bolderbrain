@@ -1,0 +1,27 @@
+import type { NextAuthConfig } from "next-auth";
+import type { TenantClaim } from "@/types/tenant";
+
+/**
+ * Shared Auth.js settings (no DB imports) so Edge middleware can import this file
+ * without bundling Prisma or `pg`.
+ */
+export const authConfig = {
+  trustHost: true,
+  session: { strategy: "jwt" },
+  providers: [],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user && "tenants" in user && Array.isArray((user as { tenants?: TenantClaim[] }).tenants)) {
+        token.tenants = (user as { tenants: TenantClaim[] }).tenants;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.sub!;
+        session.user.tenants = (token.tenants as TenantClaim[] | undefined) ?? [];
+      }
+      return session;
+    },
+  },
+} satisfies NextAuthConfig;

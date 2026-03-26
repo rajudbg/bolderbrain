@@ -1,0 +1,149 @@
+// BolderBrain — multi-tenant schema
+// Isolation: enforced in Next.js middleware + route handlers (see src/middleware.ts, src/lib/tenant.ts).
+// Optional DB-level RLS: use PostgreSQL session vars + policies; Prisma does not apply RLS automatically.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrganizationRole {
+  SUPER_ADMIN
+  ADMIN
+  EMPLOYEE
+}
+
+// --- Auth.js / NextAuth (Prisma adapter) ---
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  /// Platform-wide access to /super-admin (not tenant-scoped).
+  isPlatformSuperAdmin Boolean @default(false)
+
+  accounts             Account[]
+  sessions             Session[]
+  organizationMembers  OrganizationMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Tenants ---
+
+model Organization {
+  id       String @id @default(cuid())
+  slug     String @unique
+  name     String
+  settings Json?
+
+  members        OrganizationMember[]
+  competencies   Competency[]
+  questions      Question[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrganizationMember {
+  id             String @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrganizationRole
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+// --- Config-driven competency / assessment content (org-scoped) ---
+
+model Competency {
+  id             String @id @default(cuid())
+  organizationId String
+  key            String
+  name           String
+  description    String?
+  /// Rubrics, scales, UI hints, validation rules — interpreted by the app.
+  config         Json?
+  sortOrder      Int    @default(0)
+  isActive       Boolean @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  questions    Question[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+}
+
+model Question {
+  id             String @id @default(cuid())
+  organizationId String
+  competencyId   String
+  key            String
+  /// Question type, options, scoring, branching — interpreted by the app.
+  config         Json?
+  sortOrder      Int    @default(0)
+  isActive       Boolean @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  competency   Competency   @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([competencyId, key])
+  @@index([organizationId])
+  @@index([competencyId])
+}
