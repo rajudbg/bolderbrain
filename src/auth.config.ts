@@ -11,8 +11,15 @@ export const authConfig = {
   providers: [],
   callbacks: {
     async jwt({ token, user }) {
-      if (user && "tenants" in user && Array.isArray((user as { tenants?: TenantClaim[] }).tenants)) {
-        token.tenants = (user as { tenants: TenantClaim[] }).tenants;
+      if (user) {
+        if ("tenants" in user && Array.isArray((user as { tenants?: TenantClaim[] }).tenants)) {
+          token.tenants = (user as { tenants: TenantClaim[] }).tenants;
+        }
+        if ("isPlatformSuperAdmin" in user) {
+          token.isPlatformSuperAdmin = Boolean(
+            (user as { isPlatformSuperAdmin?: boolean }).isPlatformSuperAdmin,
+          );
+        }
       }
       return token;
     },
@@ -20,6 +27,7 @@ export const authConfig = {
       if (session.user) {
         session.user.id = token.sub!;
         session.user.tenants = (token.tenants as TenantClaim[] | undefined) ?? [];
+        session.user.isPlatformSuperAdmin = Boolean(token.isPlatformSuperAdmin);
       }
       return session;
     },

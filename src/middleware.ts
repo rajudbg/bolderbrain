@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "./auth.config";
+import { checkRateLimit } from "@/lib/api-rate-limit";
 import type { TenantClaim } from "@/types/tenant";
 import {
   TENANT_ID_HEADER,
@@ -13,6 +14,58 @@ const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
+
+  if (
+    pathname.startsWith("/api/") &&
+    !pathname.startsWith("/api/auth") &&
+    !pathname.startsWith("/api/health")
+  ) {
+    const userId = req.auth?.user?.id;
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip");
+    const key = userId ? `u:${userId}` : `ip:${ip ?? "unknown"}`;
+    if (!checkRateLimit(`api:${key}`, 100, 60_000)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+  }
+
+  if (pathname.startsWith("/admin")) {
+    if (!req.auth?.user) {
+      const login = new URL("/login", req.url);
+      login.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(login);
+    }
+    const tenants: TenantClaim[] = req.auth.user.tenants ?? [];
+    const canAdmin = tenants.some((t) => t.role === "ADMIN" || t.role === "SUPER_ADMIN");
+    if (!canAdmin) {
+      return NextResponse.redirect(new URL("/app", req.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/super-admin")) {
+    if (!req.auth?.user) {
+      const login = new URL("/login", req.url);
+      login.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(login);
+    }
+    const isPlatformSuperAdmin = Boolean(
+      (req.auth.user as { isPlatformSuperAdmin?: boolean }).isPlatformSuperAdmin,
+    );
+    if (!isPlatformSuperAdmin) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/app") || pathname.startsWith("/assessments") || pathname.startsWith("/org")) {
+    if (!req.auth?.user) {
+      const login = new URL("/login", req.url);
+      login.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(login);
+    }
+    return NextResponse.next();
+  }
+
   if (!pathname.startsWith("/api/tenant")) {
     return NextResponse.next();
   }
@@ -50,5 +103,17 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/api/tenant/:path*"],
+  matcher: [
+    "/api/:path*",
+    "/api/tenant/:path*",
+    "/admin",
+    "/admin/:path*",
+    "/super-admin",
+    "/super-admin/:path*",
+    "/app",
+    "/app/:path*",
+    "/assessments",
+    "/assessments/:path*",
+    "/org/:path*",
+  ],
 };

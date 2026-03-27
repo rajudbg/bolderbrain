@@ -1,6 +1,5 @@
 // BolderBrain — multi-tenant schema
 // Isolation: enforced in Next.js middleware + route handlers (see src/middleware.ts, src/lib/tenant.ts).
-// Optional DB-level RLS: use PostgreSQL session vars + policies; Prisma does not apply RLS automatically.
 
 generator client {
   provider = "prisma-client"
@@ -26,12 +25,22 @@ model User {
   emailVerified DateTime?
   image         String?
   passwordHash  String?
-  /// Platform-wide access to /super-admin (not tenant-scoped).
   isPlatformSuperAdmin Boolean @default(false)
+  /// When false, user cannot sign in (org-level HR offboarding).
+  isActive      Boolean   @default(true)
 
   accounts             Account[]
   sessions             Session[]
   organizationMembers  OrganizationMember[]
+  assessmentsAsSubject Assessment[]         @relation("AssessmentSubject")
+  assessmentsCreated   Assessment[]         @relation("AssessmentCreatedBy")
+  assessmentEvaluators AssessmentEvaluator[]
+  userActions             UserAction[]
+  competencySnapshots     CompetencyScoreSnapshot[]
+  developmentStreak       UserDevelopmentStreak?
+  iqTestAttempts          IqTestAttempt[]
+  eqTestAttempts          EqTestAttempt[]
+  psychTestAttempts       PsychTestAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -54,6 +63,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -62,6 +72,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -80,9 +92,17 @@ model Organization {
   name     String
   settings Json?
 
-  members        OrganizationMember[]
-  competencies   Competency[]
-  questions      Question[]
+  members             OrganizationMember[]
+  assessmentTemplates AssessmentTemplate[]
+  questions           Question[]
+  assessments         Assessment[]
+  insightRules        InsightRule[]
+  competencies               Competency[]
+  developmentAssignments     UserAction[]
+  competencyScoreSnapshots   CompetencyScoreSnapshot[]
+  iqTestAttempts             IqTestAttempt[]
+  eqTestAttempts             EqTestAttempt[]
+  psychTestAttempts          PsychTestAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -93,6 +113,8 @@ model OrganizationMember {
   organizationId String
   userId         String
   role           OrganizationRole
+  /// Department / team label for org analytics (heatmap columns, filters).
+  department     String?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -102,23 +124,60 @@ model OrganizationMember {
 
   @@unique([userId, organizationId])
   @@index([organizationId])
+  @@index([userId])
 }
 
-// --- Config-driven competency / assessment content (org-scoped) ---
+// --- Assessment templates (polymorphic: 360, IQ, EQ, psychometric) ---
 
-model Competency {
-  id             String @id @default(cuid())
-  organizationId String
-  key            String
-  name           String
-  description    String?
-  /// Rubrics, scales, UI hints, validation rules — interpreted by the app.
-  config         Json?
-  sortOrder      Int    @default(0)
-  isActive       Boolean @default(true)
+enum AssessmentTemplateType {
+  BEHAVIORAL_360
+  IQ_COGNITIVE
+  EQ_ASSESSMENT
+  PSYCHOMETRIC
+}
+
+enum ScoringStrategy {
+  MULTI_SOURCE
+  SUM_CORRECT
+  TRAIT_AGGREGATE
+}
+
+enum AssessmentQuestionType {
+  LIKERT_360
+  SINGLE_CHOICE_IQ
+  MULTI_CHOICE_IQ
+  NUMERICAL_SEQUENCE
+  VERBAL_ANALOGY
+  LOGICAL_PATTERN
+  SPATIAL_REASONING
+  EQ_SCENARIO
+  EQ_SELF_REPORT
+  PSYCHOMETRIC_LIKERT
+  FORCED_CHOICE_IPSATIVE
+  SEMANTIC_DIFFERENTIAL
+  TEXT_SHORT
+  FREE_TEXT
+}
+
+model AssessmentTemplate {
+  id                String                 @id @default(cuid())
+  organizationId    String
+  type              AssessmentTemplateType
+  key               String
+  name              String
+  description       String?
+  /// Type-specific settings (scales, time limits, norm tables, etc.).
+  config            Json?
+  scoringStrategy   ScoringStrategy
+  sortOrder         Int                    @default(0)
+  isActive          Boolean                @default(true)
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   questions    Question[]
+  assessments  Assessment[]
+  iqTestAttempts IqTestAttempt[]
+  eqTestAttempts EqTestAttempt[]
+  psychTestAttempts PsychTestAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -128,22 +187,448 @@ model Competency {
 }
 
 model Question {
-  id             String @id @default(cuid())
-  organizationId String
-  competencyId   String
-  key            String
-  /// Question type, options, scoring, branching — interpreted by the app.
-  config         Json?
-  sortOrder      Int    @default(0)
-  isActive       Boolean @default(true)
+  id              String @id @default(cuid())
+  organizationId  String
+  templateId      String
+  key             String
+  questionType    AssessmentQuestionType
+  /// Stems, options, branching — interpreted by the app; option `id` values referenced by correctOptionId.
+  config          Json?
+  /// For IQ / objective items: matches `options[].id` in config when using choice types.
+  correctOptionId String?
+  /// For EQ / psychometric: e.g. SelfAwareness, Empathy.
+  traitCategory   String?
+  weight          Decimal @default(1) @db.Decimal(12, 4)
+  /// Optional per-item time budget (seconds); also may appear in `config` for overrides.
+  timeLimitSeconds Int?
+  /// EQ self-report: when true, Likert scores are reversed before scaling (higher raw = lower EQ).
+  reverseScored   Boolean @default(false)
+  sortOrder       Int     @default(0)
+  isActive        Boolean @default(true)
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  competency   Competency   @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template     AssessmentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  responses    AssessmentResponse[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([competencyId, key])
+  @@unique([templateId, key])
   @@index([organizationId])
+  @@index([templateId])
+}
+
+enum IqAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+}
+
+/// Self-administered IQ / cognitive test session (single-rater; pooled questions).
+model IqTestAttempt {
+  id             String          @id @default(cuid())
+  userId         String
+  organizationId String
+  templateId     String
+  status         IqAttemptStatus @default(IN_PROGRESS)
+  startedAt      DateTime        @default(now())
+  submittedAt    DateTime?
+  /// Absolute deadline (server clock) for auto-submit.
+  endsAt         DateTime
+  /// Ordered question ids selected for this attempt (JSON string[]).
+  questionIds    Json
+  /// On submit: { [questionId]: selectedOptionId }
+  responses      Json?
+  /// Optional: question ids the user flagged for review (JSON string[]).
+  flaggedIds     Json?
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template     AssessmentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  result       IqTestResult?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, templateId])
+  @@index([organizationId])
+  @@index([templateId])
+}
+
+model IqTestResult {
+  id                  String   @id @default(cuid())
+  attemptId           String   @unique
+  rawCorrectCount     Int
+  weightedScore       Float
+  maxWeighted         Float
+  standardScore       Float
+  percentile          Float
+  ciLow               Float
+  ciHigh              Float
+  categoryLabel       String
+  breakdownByCategory Json
+  interpretation      String   @db.Text
+
+  attempt IqTestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+enum EqAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// Self-administered EQ assessment with save/resume (draft responses on attempt).
+model EqTestAttempt {
+  id             String         @id @default(cuid())
+  userId         String
+  organizationId String
+  templateId     String
+  status         EqAttemptStatus @default(IN_PROGRESS)
+  startedAt      DateTime       @default(now())
+  submittedAt    DateTime?
+  /// Ordered question ids for this attempt (JSON string[]).
+  questionIds    Json
+  /// Draft or final: { [questionId]: { scenarioOptionId?: string, likert?: number } }
+  responses      Json?
+  /// Section index 0–4 for Goleman domains (ordered progress).
+  currentSectionIndex Int       @default(0)
+  lastSavedAt    DateTime?
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template     AssessmentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  result       EqTestResult?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, templateId])
+  @@index([organizationId])
+  @@index([templateId])
+}
+
+model EqTestResult {
+  id                   String   @id @default(cuid())
+  attemptId            String     @unique
+  domainScores         Json
+  compositeScore       Float
+  percentileComposite  Float
+  percentileByDomain   Json
+  highestDomain        String
+  lowestDomain         String
+  consistencyFlags     Json
+  narrativeText        String     @db.Text
+  quadrantLabel        String
+  heatmapPosition      Json
+  /// Snapshot of previous completed result on same template (for growth comparison).
+  previousSnapshot     Json?
+
+  attempt EqTestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+enum PsychAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// Big Five / OCEAN-style psychometric session (long-form; save/resume).
+model PsychTestAttempt {
+  id             String            @id @default(cuid())
+  userId         String
+  organizationId String
+  templateId     String
+  status         PsychAttemptStatus @default(IN_PROGRESS)
+  startedAt      DateTime          @default(now())
+  submittedAt    DateTime?
+  questionIds    Json
+  /// { [questionId]: PsychResponse }
+  responses      Json?
+  /// Current page index (0-based) when using paged UI.
+  currentPageIndex Int            @default(0)
+  lastSavedAt    DateTime?
+  /// Per-question dwell time in ms (client-reported): { [questionId]: number }
+  itemTimings    Json?
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template     AssessmentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  result       PsychTestResult?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, templateId])
+  @@index([organizationId])
+  @@index([templateId])
+}
+
+model PsychTestResult {
+  id                String   @id @default(cuid())
+  attemptId         String   @unique
+  traitPercentiles  Json
+  rawTraitSums      Json
+  validityFlags     Json
+  roleMatches       Json
+  teamDynamicsText  String   @db.Text
+  careerInsightsText String  @db.Text
+  summaryLine       String
+  /// Radar chart payload: user + population + optional ideal profile.
+  radarPayload      Json
+
+  attempt PsychTestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// --- Assessment instances (360 and future types) ---
+
+enum AssessmentInstanceStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum EvaluatorRole {
+  SELF
+  PEER
+  MANAGER
+}
+
+enum EvaluatorStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Assessment {
+  id              String                   @id @default(cuid())
+  organizationId  String
+  templateId      String
+  /// Employee being assessed (ratee).
+  subjectUserId   String
+  title           String?
+  status          AssessmentInstanceStatus @default(ACTIVE)
+  createdByUserId String?
+  /// Optional target date for completion (admin alerts / extensions).
+  dueAt           DateTime?
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template     AssessmentTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  subject      User               @relation("AssessmentSubject", fields: [subjectUserId], references: [id], onDelete: Cascade)
+  createdBy    User?              @relation("AssessmentCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  evaluators AssessmentEvaluator[]
+  result     AssessmentResult?
+  competencySnapshots CompetencyScoreSnapshot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([subjectUserId])
+  @@index([templateId])
+}
+
+model AssessmentEvaluator {
+  id           String          @id @default(cuid())
+  assessmentId String
+  userId       String
+  role         EvaluatorRole
+  status       EvaluatorStatus @default(PENDING)
+  submittedAt  DateTime?
+
+  assessment Assessment           @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses  AssessmentResponse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([assessmentId, userId])
+  @@index([userId])
+  @@index([assessmentId])
+}
+
+model AssessmentResponse {
+  id          String  @id @default(cuid())
+  evaluatorId String
+  questionId  String
+  /// Likert scale 1–5 for LIKERT_360; optional for text items.
+  numericValue Int?
+  textValue    String? @db.Text
+
+  evaluator AssessmentEvaluator @relation(fields: [evaluatorId], references: [id], onDelete: Cascade)
+  question  Question            @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([evaluatorId, questionId])
+  @@index([questionId])
+  @@index([evaluatorId])
+}
+
+model AssessmentResult {
+  id               String   @id @default(cuid())
+  assessmentId     String   @unique
+  /// Multi-source 360 scores per competency + summary (see app types).
+  competencyScores Json
+  computedAt       DateTime @default(now())
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+}
+
+// --- 360 insight rules (tenant-configurable; optional global defaults) ---
+
+enum InsightSeverity {
+  INFO
+  WARNING
+  POSITIVE
+}
+
+/// Rule-based insight templates. `competencyKey` matches 360 competency group name; null = any.
+model InsightRule {
+  id               String          @id @default(cuid())
+  organizationId   String?
+  /// Matches `Assessment360StoredResult.byCompetency[].competencyKey` when set.
+  competencyKey    String?
+  minGap           Decimal         @db.Decimal(6, 3)
+  maxGap           Decimal         @db.Decimal(6, 3)
+  messageTemplate  String          @db.Text
+  severity         InsightSeverity @default(INFO)
+  sortOrder        Int             @default(0)
+  isActive         Boolean         @default(true)
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+// --- Development: competencies, actions, user progress ---
+
+enum ActionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum UserActionStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  DISMISSED
+}
+
+enum UserActionSource {
+  AUTO
+  MANUAL
+}
+
+/// Org-level competency catalog; `key` should match 360 question `traitCategory` for auto-assignment.
+model Competency {
+  id             String @id @default(cuid())
+  organizationId String
+  key            String
+  name           String
+  description    String? @db.Text
+  sortOrder      Int     @default(0)
+  isActive       Boolean @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actions      Action[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+}
+
+model Action {
+  id            String           @id @default(cuid())
+  competencyId  String
+  title         String
+  description   String           @db.Text
+  difficulty    ActionDifficulty
+  estimatedTime Int
+  sortOrder     Int              @default(0)
+  isActive      Boolean          @default(true)
+
+  competency  Competency   @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  userActions UserAction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([competencyId])
+}
+
+model UserAction {
+  id               String           @id @default(cuid())
+  userId           String
+  actionId         String
+  organizationId   String
+  status           UserActionStatus @default(ASSIGNED)
+  source           UserActionSource @default(AUTO)
+  /// ISO week key e.g. 2025-W13
+  weekKey          String
+  assignedAt       DateTime         @default(now())
+  completedAt      DateTime?
+  notes            String?          @db.Text
+  dismissReason    String?          @db.Text
+  /// 360 assessment that triggered auto-assignment (idempotency).
+  sourceAssessmentId String?
+  /// EQ attempt that triggered auto-assignment (idempotency).
+  sourceEqAttemptId  String?
+  sourcePsychAttemptId String?
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action       Action       @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, actionId, weekKey])
+  @@index([userId, weekKey])
+  @@index([userId, status])
+  @@index([organizationId])
+  @@index([sourceAssessmentId])
+  @@index([sourceEqAttemptId])
+  @@index([sourcePsychAttemptId])
+}
+
+model CompetencyScoreSnapshot {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  assessmentId   String
+  competencyKey  String
+  self           Float?
+  peerAvg        Float?
+  manager        Float?
+  othersAverage  Float
+  recordedAt     DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordedAt])
+  @@index([userId, competencyKey, recordedAt])
+  @@index([assessmentId])
+}
+
+model UserDevelopmentStreak {
+  userId                    String  @id
+  consecutiveWeeksCompleted Int     @default(0)
+  lastCountedWeekKey        String?
+  updatedAt                 DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
