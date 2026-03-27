@@ -41,6 +41,8 @@ model User {
   iqTestAttempts          IqTestAttempt[]
   eqTestAttempts          EqTestAttempt[]
   psychTestAttempts       PsychTestAttempt[]
+  trainingEnrollments     TrainingEnrollment[]
+  trainingAttempts        TrainingAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -103,6 +105,8 @@ model Organization {
   iqTestAttempts             IqTestAttempt[]
   eqTestAttempts             EqTestAttempt[]
   psychTestAttempts          PsychTestAttempt[]
+  trainingPrograms           TrainingProgram[]
+  trainingContentTemplates   TrainingContentTemplate[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -178,6 +182,7 @@ model AssessmentTemplate {
   iqTestAttempts IqTestAttempt[]
   eqTestAttempts EqTestAttempt[]
   psychTestAttempts PsychTestAttempt[]
+  trainingPrograms  TrainingProgram[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -631,4 +636,197 @@ model UserDevelopmentStreak {
   updatedAt                 DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- Flexible training content templates (Knowledge / Behavioral) — parallel to AssessmentTemplate ---
+
+enum TrainingContentTemplateKind {
+  KNOWLEDGE_TEST
+  BEHAVIORAL_TEST
+}
+
+enum TrainingContentQuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  LIKERT_5_SCALE
+  LIKERT_FREQUENCY
+  SEMANTIC_DIFFERENTIAL
+}
+
+/// Global (org null) or org-scoped templates for Training Impact programs.
+model TrainingContentTemplate {
+  id             String  @id @default(cuid())
+  organizationId String?
+  kind           TrainingContentTemplateKind
+  name           String
+  description    String?
+  minQuestions   Int     @default(5)
+  maxQuestions   Int     @default(50)
+  defaultQuestionCount Int @default(20)
+  hasTimer       Boolean @default(false)
+  timeLimitMinutes Int?
+  defaultOptionCount Int @default(4)
+  isPublished    Boolean @default(false)
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  questions    TrainingContentQuestion[]
+  trainingPrograms TrainingProgram[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model TrainingContentQuestion {
+  id         String @id @default(cuid())
+  templateId String
+  text       String  @db.Text
+  type       TrainingContentQuestionType
+  /// Display order in builder; runtime order may shuffle.
+  sortOrder  Int     @default(0)
+  /// For knowledge tests: which option ids are correct (multiple for MULTIPLE_CHOICE).
+  correctOptionIds String[] @default([])
+  points     Int     @default(1)
+  competencyKey String?
+  reverseScored Boolean @default(false)
+  minOptions Int     @default(3)
+  maxOptions Int     @default(6)
+  explanation String? @db.Text
+
+  template TrainingContentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  options  TrainingContentOption[]
+
+  @@index([templateId])
+}
+
+model TrainingContentOption {
+  id         String @id @default(cuid())
+  questionId String
+  text       String
+  sortOrder  Int    @default(0)
+  /// For Likert: 1–5 weight; for knowledge: optional scoring weight.
+  value      Int    @default(0)
+
+  question TrainingContentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+enum TrainingAttemptPhase {
+  PRE
+  POST
+}
+
+model TrainingAttempt {
+  id                   String @id @default(cuid())
+  trainingProgramId    String
+  trainingEnrollmentId String
+  userId               String
+  phase                TrainingAttemptPhase
+  /// Ordered question ids as JSON string[] (may be shuffled).
+  questionOrder        Json
+  /// Per-question option id order for shuffle.
+  optionShuffle        Json?
+  /// Draft / final responses keyed by questionId.
+  responses            Json?
+  /// Scored payload (percent, byQuestion, etc.).
+  scoreJson            Json?
+  /// Set when the participant opens the attempt (timer anchor).
+  startedAt            DateTime?
+  submittedAt          DateTime?
+  endsAt               DateTime?
+
+  trainingProgram    TrainingProgram    @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+  trainingEnrollment TrainingEnrollment @relation(fields: [trainingEnrollmentId], references: [id], onDelete: Cascade)
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingEnrollmentId, phase])
+  @@index([trainingProgramId])
+  @@index([userId])
+}
+
+// --- Training Impact (pre/post paired assessments) ---
+
+enum TrainingStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+}
+
+enum EnrollmentStatus {
+  INVITED
+  PRE_COMPLETED
+  TRAINING_COMPLETED
+  POST_COMPLETED
+}
+
+/// Paired pre/post around a training event. Use **either** legacy 360 `templateId` **or** `trainingContentTemplateId`.
+model TrainingProgram {
+  id             String         @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  /// Legacy: behavioral 360 template (optional when using flexible content template).
+  templateId     String?
+  /// Flexible knowledge / behavioral tests (Phase 14 refined).
+  trainingContentTemplateId String?
+  /// How many questions per attempt (random subset from pool).
+  questionPoolCount Int?
+  /// Same order for all vs random per participant.
+  randomizePerParticipant Boolean @default(false)
+  shufflePostQuestions Boolean @default(true)
+  shufflePostOptions   Boolean @default(true)
+  timerOverrideMinutes Int?
+  scoringMode          String? @db.VarChar(50)
+  partialCredit        Boolean @default(false)
+  passThresholdPercent Int?
+  allowRetake          Boolean @default(false)
+
+  preOpensAt     DateTime
+  preClosesAt    DateTime
+  trainingDate   DateTime
+  postOpensAt    DateTime
+  postClosesAt   DateTime
+  status         TrainingStatus @default(DRAFT)
+  /// Manual cohort attendance (optional).
+  attendanceCount   Int?
+  attendanceExpected Int?
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template     AssessmentTemplate? @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  trainingContentTemplate TrainingContentTemplate? @relation(fields: [trainingContentTemplateId], references: [id], onDelete: Restrict)
+  enrollments  TrainingEnrollment[]
+  attempts     TrainingAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model TrainingEnrollment {
+  id                String @id @default(cuid())
+  trainingProgramId String
+  userId            String
+
+  preAssignmentId  String?
+  postAssignmentId String?
+
+  preScores  Json?
+  postScores Json?
+  delta      Json?
+
+  status      EnrollmentStatus @default(INVITED)
+  completedAt DateTime?
+
+  trainingProgram TrainingProgram @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts        TrainingAttempt[]
+
+  @@unique([trainingProgramId, userId])
+  @@index([userId])
+  @@index([trainingProgramId])
 }

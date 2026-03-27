@@ -12,6 +12,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const adminTenants = listAdminTenants(session.user.tenants);
   if (adminTenants.length === 0) {
+    if (session.user.isPlatformSuperAdmin) {
+      redirect("/super-admin");
+    }
     redirect("/app");
   }
 
@@ -26,7 +29,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     orderBy: { name: "asc" },
   });
 
-  const current = orgRows.find((o) => o.id === orgId) ?? orgRows[0]!;
+  if (orgRows.length === 0) {
+    redirect("/app");
+  }
+
+  const current = orgRows.find((o) => o.id === orgId) ?? orgRows[0];
+  if (!current) {
+    redirect("/app");
+  }
 
   return (
     <AdminShell

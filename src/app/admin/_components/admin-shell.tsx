@@ -7,6 +7,7 @@ import {
   BarChart3,
   Building2,
   Download,
+  GraduationCap,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -24,6 +25,7 @@ import { setAdminOrgSlugCookie } from "../org-actions";
 const nav = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/competencies", label: "Competencies", icon: BarChart3 },
+  { href: "/admin/training", label: "Training Impact", icon: GraduationCap },
   { href: "/admin/feedback-360", label: "360 feedback", icon: Users },
   { href: "/admin/talent", label: "Talent insights", icon: Target },
   { href: "/admin/usage", label: "Usage", icon: BarChart3 },

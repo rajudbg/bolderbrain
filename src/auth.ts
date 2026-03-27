@@ -11,6 +11,37 @@ import type { TenantClaim } from "@/types/tenant";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prisma),
+  callbacks: {
+    /**
+     * PrismaAdapter + Credentials can drop custom `user.tenants` before the JWT is minted.
+     * Always load org memberships from DB so `tenants` (and ADMIN vs EMPLOYEE) are in the JWT.
+     */
+    async jwt({ token, user }) {
+      if (user) {
+        if ("tenants" in user && Array.isArray((user as { tenants?: TenantClaim[] }).tenants)) {
+          token.tenants = (user as { tenants: TenantClaim[] }).tenants;
+        }
+        if ("isPlatformSuperAdmin" in user) {
+          token.isPlatformSuperAdmin = Boolean(
+            (user as { isPlatformSuperAdmin?: boolean }).isPlatformSuperAdmin,
+          );
+        }
+      }
+      if (token.sub) {
+        const memberships = await prisma.organizationMember.findMany({
+          where: { userId: token.sub },
+          include: { organization: { select: { slug: true } } },
+        });
+        token.tenants = memberships.map((m) => ({
+          organizationId: m.organizationId,
+          slug: m.organization.slug,
+          role: m.role,
+        })) as TenantClaim[];
+      }
+      return token;
+    },
+    session: authConfig.callbacks!.session,
+  },
   providers: [
     Credentials({
       credentials: {

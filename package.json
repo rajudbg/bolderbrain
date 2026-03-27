@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "seed:demo": "tsx prisma/seed-demo.ts"
+    "seed:demo": "tsx prisma/seed-demo.ts",
+    "seed:training-content-demo": "tsx prisma/seed-training-content-demo.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

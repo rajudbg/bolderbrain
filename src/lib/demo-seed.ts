@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@/generated/prisma/client";
 import {
@@ -13,6 +14,8 @@ import {
   ScoringStrategy,
   UserActionSource,
   UserActionStatus,
+  TrainingContentQuestionType,
+  TrainingContentTemplateKind,
 } from "@/generated/prisma/enums";
 import type { AssessmentQuestionType as AQT } from "@/generated/prisma/enums";
 import { tryFinalizeAssessmentResult } from "@/lib/assessment-360-result";
@@ -816,6 +819,118 @@ async function seedPsychTemplate(orgId: string) {
   return template.id;
 }
 
+/**
+ * Global (org-scoped null) training content template so HR admins can select
+ * "Knowledge / behavioral test" without using Super Admin. Idempotent by name.
+ */
+export async function seedGlobalDemoTrainingContentTemplates(): Promise<void> {
+  const name = "Demo: Excel Skills (sample)";
+  const existing = await prisma.trainingContentTemplate.findFirst({
+    where: { organizationId: null, name },
+  });
+  if (existing) return;
+
+  const stems: Array<{ text: string; options: [string, string, string, string]; correctIndex: number }> = [
+    {
+      text: "What is the primary purpose of Ctrl+S in Excel?",
+      options: ["Save the workbook", "Print the sheet", "Undo the last action", "Close Excel"],
+      correctIndex: 0,
+    },
+    {
+      text: "Which formula adds the values in cells A1 through A10?",
+      options: ["=SUM(A1:A10)", "=A1+A10", "=ADD(A1:A10)", "=TOTAL(A1:A10)"],
+      correctIndex: 0,
+    },
+    {
+      text: "What does the $ in $A$1 mean?",
+      options: ["The row and column are absolute references", "The cell is locked from editing", "The value is a currency format", "The cell is hidden"],
+      correctIndex: 0,
+    },
+    {
+      text: "Which function looks up a value in the first column of a table and returns a value in the same row?",
+      options: ["VLOOKUP", "SUMIF", "COUNTA", "CONCAT"],
+      correctIndex: 0,
+    },
+    {
+      text: "What is a pivot table mainly used for?",
+      options: ["Summarizing and analyzing grouped data", "Drawing charts only", "Protecting cells", "Spell checking"],
+      correctIndex: 0,
+    },
+    {
+      text: "Which file extension is the default for modern Excel workbooks?",
+      options: [".xlsx", ".xls", ".csv", ".docx"],
+      correctIndex: 0,
+    },
+    {
+      text: "What does IFERROR typically help you do?",
+      options: ["Show a fallback when a formula errors", "Remove all errors from the disk", "Highlight errors in red only", "Convert text to numbers"],
+      correctIndex: 0,
+    },
+    {
+      text: "Which keyboard shortcut opens Find in Excel (Windows)?",
+      options: ["Ctrl+F", "Ctrl+H", "Ctrl+G", "Ctrl+N"],
+      correctIndex: 0,
+    },
+    {
+      text: "What does freezing panes let you keep visible while scrolling?",
+      options: ["Selected rows and/or columns", "Only charts", "Only comments", "Only images"],
+      correctIndex: 0,
+    },
+    {
+      text: "Which feature removes duplicate rows from a selected range?",
+      options: ["Remove Duplicates (Data tab)", "Conditional Formatting", "Goal Seek", "Subtotal"],
+      correctIndex: 0,
+    },
+  ];
+
+  await prisma.trainingContentTemplate.create({
+    data: {
+      organizationId: null,
+      kind: TrainingContentTemplateKind.KNOWLEDGE_TEST,
+      name,
+      description:
+        "Sample 10-question knowledge check with a 20-minute timer. Published globally for Training Impact demos.",
+      minQuestions: 5,
+      maxQuestions: 50,
+      defaultQuestionCount: 10,
+      hasTimer: true,
+      timeLimitMinutes: 20,
+      defaultOptionCount: 4,
+      isPublished: true,
+      questions: {
+        create: stems.map((q, qi) => {
+          const optionRows = q.options.map((text, oi) => ({
+            id: randomUUID(),
+            text,
+            sortOrder: oi,
+            value: oi,
+          }));
+          const correctId = optionRows[q.correctIndex]?.id;
+          if (!correctId) throw new Error("demo template: bad correctIndex");
+          return {
+            text: q.text,
+            type: TrainingContentQuestionType.SINGLE_CHOICE,
+            sortOrder: qi,
+            correctOptionIds: [correctId],
+            points: 1,
+            minOptions: 3,
+            maxOptions: 6,
+            explanation: null,
+            options: {
+              create: optionRows.map((o) => ({
+                id: o.id,
+                text: o.text,
+                sortOrder: o.sortOrder,
+                value: o.value,
+              })),
+            },
+          };
+        }),
+      },
+    },
+  });
+}
+
 async function seedManualActions(
   orgId: string,
   userByEmail: Map<string, { id: string }>,
@@ -871,18 +986,35 @@ export async function seedDemoOrganization(): Promise<void> {
 
   for (const m of MEMBERS) {
     const hash = m.email === "admin@acme.com" ? passwordAdmin : passwordDemo;
-    const user = await prisma.user.create({
-      data: {
+    /** Upsert: wipeDemoOrganization removes org + memberships; user.create would fail on duplicate email and leave users without org rows. */
+    const user = await prisma.user.upsert({
+      where: { email: m.email },
+      create: {
         email: m.email,
         name: m.name,
         passwordHash: hash,
         isActive: true,
       },
+      update: {
+        name: m.name,
+        passwordHash: hash,
+        isActive: true,
+      },
     });
-    await prisma.organizationMember.create({
-      data: {
+    await prisma.organizationMember.upsert({
+      where: {
+        userId_organizationId: {
+          userId: user.id,
+          organizationId: org.id,
+        },
+      },
+      create: {
         organizationId: org.id,
         userId: user.id,
+        role: m.role,
+        department: m.department,
+      },
+      update: {
         role: m.role,
         department: m.department,
       },
@@ -903,4 +1035,6 @@ export async function seedDemoOrganization(): Promise<void> {
   await seedEqDemo(org.id, userByEmail, eqTid);
   await seedPsychInProgress(org.id, userByEmail, psychTid);
   await seedManualActions(org.id, userByEmail, competencyBundles);
+
+  await seedGlobalDemoTrainingContentTemplates();
 }

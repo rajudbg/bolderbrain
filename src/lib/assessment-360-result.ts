@@ -5,6 +5,7 @@ import {
   ScoringStrategy as PrismaScoringStrategy,
 } from "@/generated/prisma/enums";
 import { autoAssignActionsAfter360, recordCompetencySnapshots } from "@/lib/action-engine";
+import { onAssessment360FinalizedForTraining } from "@/lib/training-enrollment-sync";
 import prisma from "@/lib/prisma";
 import { createScoringStrategy } from "@/lib/scoring/factory";
 import type { ScoringInput, ScoringQuestionMeta, ScoringResponse, ScoringResult } from "@/lib/scoring/types";
@@ -161,6 +162,8 @@ export async function tryFinalizeAssessmentResult(assessmentId: string): Promise
     organizationId: assessment.organizationId,
     scores: payload,
   });
+
+  await onAssessment360FinalizedForTraining(assessmentId);
 
   return payload;
 }

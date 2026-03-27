@@ -1,5 +1,8 @@
 import NextAuth from "next-auth";
+import type { Session } from "next-auth";
+import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { authConfig } from "./auth.config";
 import { checkRateLimit } from "@/lib/api-rate-limit";
 import type { TenantClaim } from "@/types/tenant";
@@ -12,7 +15,52 @@ import {
 
 const { auth } = NextAuth(authConfig);
 
-export default auth((req) => {
+const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+
+/** `auth()` augments the request with `auth`; NextRequest's type does not include it. */
+type AuthMiddlewareRequest = NextRequest & {
+  auth?: Session | null;
+};
+
+/** Prefer session; fall back to decrypted JWT — middleware uses `authConfig` only, so `req.auth.user.tenants` can be empty even when the cookie has them. */
+async function tenantClaimsForMiddleware(req: AuthMiddlewareRequest): Promise<TenantClaim[]> {
+  const fromSession = req.auth?.user?.tenants;
+  if (fromSession && fromSession.length > 0) {
+    return fromSession;
+  }
+  if (!authSecret) {
+    return [];
+  }
+  const forwarded = req.headers.get("x-forwarded-proto");
+  const secureCookie = (forwarded ?? req.nextUrl.protocol.replace(":", "")) === "https";
+  const token = await getToken({
+    req,
+    secret: authSecret,
+    secureCookie,
+  });
+  const tenants = (token as { tenants?: TenantClaim[] } | null)?.tenants;
+  return Array.isArray(tenants) ? tenants : [];
+}
+
+async function platformSuperAdminForMiddleware(req: AuthMiddlewareRequest): Promise<boolean> {
+  const fromSession = Boolean(req.auth?.user?.isPlatformSuperAdmin);
+  if (fromSession) {
+    return true;
+  }
+  if (!authSecret) {
+    return false;
+  }
+  const forwarded = req.headers.get("x-forwarded-proto");
+  const secureCookie = (forwarded ?? req.nextUrl.protocol.replace(":", "")) === "https";
+  const token = await getToken({
+    req,
+    secret: authSecret,
+    secureCookie,
+  });
+  return Boolean((token as { isPlatformSuperAdmin?: boolean } | null)?.isPlatformSuperAdmin);
+}
+
+export default auth(async (req) => {
   const { pathname } = req.nextUrl;
 
   if (
@@ -34,8 +82,10 @@ export default auth((req) => {
       login.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(login);
     }
-    const tenants: TenantClaim[] = req.auth.user.tenants ?? [];
-    const canAdmin = tenants.some((t) => t.role === "ADMIN" || t.role === "SUPER_ADMIN");
+    const tenants = await tenantClaimsForMiddleware(req);
+    const isPlatformSuperAdmin = await platformSuperAdminForMiddleware(req);
+    const canAdmin =
+      isPlatformSuperAdmin || tenants.some((t) => t.role === "ADMIN" || t.role === "SUPER_ADMIN");
     if (!canAdmin) {
       return NextResponse.redirect(new URL("/app", req.url));
     }
@@ -48,9 +98,7 @@ export default auth((req) => {
       login.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(login);
     }
-    const isPlatformSuperAdmin = Boolean(
-      (req.auth.user as { isPlatformSuperAdmin?: boolean }).isPlatformSuperAdmin,
-    );
+    const isPlatformSuperAdmin = await platformSuperAdminForMiddleware(req);
     if (!isPlatformSuperAdmin) {
       return NextResponse.redirect(new URL("/", req.url));
     }
@@ -84,7 +132,7 @@ export default auth((req) => {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const tenants: TenantClaim[] = req.auth.user.tenants ?? [];
+  const tenants: TenantClaim[] = await tenantClaimsForMiddleware(req);
   const match = tenants.find(
     (t) => (slug && t.slug === slug) || (orgIdHeader && t.organizationId === orgIdHeader),
   );

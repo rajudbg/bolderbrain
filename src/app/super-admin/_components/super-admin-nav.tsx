@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ClipboardList, HelpCircle, LayoutDashboard, Sparkles } from "lucide-react";
+import { BookMarked, Building2, ClipboardList, HelpCircle, LayoutDashboard, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "./sign-out-button";
 
@@ -10,6 +10,7 @@ const links = [
   { href: "/super-admin", label: "Overview", icon: LayoutDashboard },
   { href: "/super-admin/organizations", label: "Organizations", icon: Building2 },
   { href: "/super-admin/templates", label: "Assessment templates", icon: ClipboardList },
+  { href: "/super-admin/templates/content/new", label: "Training content", icon: BookMarked },
   { href: "/super-admin/questions", label: "Questions", icon: HelpCircle },
   { href: "/super-admin/development", label: "Development", icon: Sparkles },
 ];
@@ -28,7 +29,11 @@ export function SuperAdminNav() {
           const activeResolved =
             href === "/super-admin"
               ? pathname === "/super-admin"
-              : pathname === href || pathname.startsWith(`${href}/`);
+              : href === "/super-admin/templates/content/new"
+                ? pathname.startsWith("/super-admin/templates/content")
+                : href === "/super-admin/templates"
+                  ? pathname.startsWith("/super-admin/templates") && !pathname.startsWith("/super-admin/templates/content")
+                  : pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}
