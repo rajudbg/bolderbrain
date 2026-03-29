@@ -31,11 +31,34 @@ function isSafeInternalPath(path: string): boolean {
   return path.startsWith("/") && !path.startsWith("//") && !path.includes("://");
 }
 
+/** Map NextAuth / Auth.js error codes to user-facing copy. */
+function signInErrorMessage(code: string | undefined): string {
+  switch (code) {
+    case "CredentialsSignin":
+      return "Invalid email or password. Check your credentials and try again.";
+    case "AccessDenied":
+      return "Access denied. You may not have permission to sign in this way.";
+    case "Configuration":
+      return "Sign-in is not configured correctly. Contact support.";
+    case "Verification":
+      return "The verification link has expired or was already used.";
+    case "OAuthSignin":
+    case "OAuthCallback":
+    case "OAuthCreateAccount":
+    case "EmailCreateAccount":
+    case "Callback":
+      return "Sign-in failed. Please try again or use email and password.";
+    default:
+      return "Sign-in failed. Check your email and password and try again.";
+  }
+}
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrlParam = searchParams.get("callbackUrl");
   const portal = searchParams.get("portal");
+  const urlError = searchParams.get("error");
   const { data: session, status } = useSession();
 
   const variant = useMemo(() => {
@@ -57,6 +80,13 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (urlError) {
+      setFormError(signInErrorMessage(urlError));
+    }
+  }, [urlError]);
 
   const title =
     variant === "organization"
@@ -78,6 +108,7 @@ export function LoginForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setFormError(null);
     setPending(true);
     try {
       const result = await signIn("credentials", {
@@ -86,6 +117,9 @@ export function LoginForm() {
         redirect: false,
       });
       if (result?.error) {
+        const msg = signInErrorMessage(result.error);
+        setFormError(msg);
+        toast.error(msg);
         return;
       }
 
@@ -147,6 +181,14 @@ export function LoginForm() {
         </CardHeader>
         <CardContent className="px-8 pb-10">
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
+            {formError ? (
+              <div
+                role="alert"
+                className="rounded-xl border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-sm text-rose-100/95"
+              >
+                {formError}
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-white/80">
                 Email
@@ -156,7 +198,10 @@ export function LoginForm() {
                 type="email"
                 autoComplete="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setFormError(null);
+                }}
                 required
                 className="border-white/10 bg-white/[0.05] text-white/90 ring-offset-[#030305] placeholder:text-white/30"
               />
@@ -170,7 +215,10 @@ export function LoginForm() {
                 type="password"
                 autoComplete="current-password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setFormError(null);
+                }}
                 required
                 className="border-white/10 bg-white/[0.05] text-white/90 ring-offset-[#030305] placeholder:text-white/30"
               />

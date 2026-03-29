@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,8 @@ import {
   launchPostAssessments,
   launchTrainingPreAssessments,
   markCohortTrainingComplete,
+  sendTrainingEnrollmentReminder,
+  sendTrainingRemindersIncomplete,
   updateTrainingAttendance,
 } from "../actions";
 import { EnrollmentStatus, TrainingStatus } from "@/generated/prisma/enums";
@@ -197,6 +199,28 @@ export function TrainingProgramDashboard({
         </Button>
         <Button
           type="button"
+          variant="outline"
+          disabled={pending !== null}
+          onClick={() => {
+            setPending("remind-all");
+            void (async () => {
+              try {
+                const r = await sendTrainingRemindersIncomplete(program.id);
+                toast.success(`Sent ${r.sent} reminder(s)`);
+                router.refresh();
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Failed");
+              } finally {
+                setPending(null);
+              }
+            })();
+          }}
+        >
+          <Mail className="mr-2 size-4" />
+          {pending === "remind-all" ? "…" : "Email incomplete"}
+        </Button>
+        <Button
+          type="button"
           variant="ghost"
           disabled={pending !== null}
           onClick={() => run(() => completeTrainingProgram(program.id), "done")}
@@ -253,6 +277,7 @@ export function TrainingProgramDashboard({
               <th className="px-3 py-2">Participant</th>
               <th className="px-3 py-2">Status</th>
               <th className="px-3 py-2">Δ overall %</th>
+              <th className="px-3 py-2 text-right">Remind</th>
             </tr>
           </thead>
           <tbody>
@@ -269,6 +294,36 @@ export function TrainingProgramDashboard({
                   </td>
                   <td className={cn("px-3 py-2 tabular-nums", pct != null && pct > 0 && "text-amber-200/90")}>
                     {pct != null ? `${pct > 0 ? "+" : ""}${pct}%` : "—"}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {e.status === EnrollmentStatus.POST_COMPLETED ? (
+                      <span className="text-xs text-white/35">—</span>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="text-sky-300/90 hover:text-sky-200"
+                        disabled={pending !== null}
+                        onClick={() => {
+                          const key = `rem-${e.id}`;
+                          setPending(key);
+                          void (async () => {
+                            try {
+                              await sendTrainingEnrollmentReminder(e.id);
+                              toast.success("Reminder sent");
+                              router.refresh();
+                            } catch (err) {
+                              toast.error(err instanceof Error ? err.message : "Failed");
+                            } finally {
+                              setPending(null);
+                            }
+                          })();
+                        }}
+                      >
+                        <Mail className="size-3.5" />
+                      </Button>
+                    )}
                   </td>
                 </tr>
               );

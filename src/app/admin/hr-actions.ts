@@ -1,10 +1,15 @@
 "use server";
 
-import { AssessmentInstanceStatus, OrganizationRole } from "@/generated/prisma/enums";
+import {
+  AssessmentInstanceStatus,
+  EvaluatorStatus,
+  OrganizationRole,
+} from "@/generated/prisma/enums";
 import { requireAdminOrganizationId } from "@/lib/admin/context";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createAssessment360 } from "@/app/org/[slug]/assessments/actions";
+import { notifyPendingReminder } from "@/lib/email";
 import { z } from "zod";
 
 const create360AdminSchema = z.object({
@@ -65,12 +70,40 @@ export async function updateMemberDepartment(userId: string, department: string 
 
 export async function send360Reminder(assessmentId: string) {
   const orgId = await requireAdminOrganizationId();
-  await prisma.assessment.findFirstOrThrow({
+  const a = await prisma.assessment.findFirst({
     where: { id: assessmentId, organizationId: orgId },
-    select: { id: true },
+    include: {
+      organization: { select: { name: true } },
+      template: { select: { name: true } },
+      evaluators: {
+        where: { status: { in: [EvaluatorStatus.PENDING, EvaluatorStatus.IN_PROGRESS] } },
+        include: { user: { select: { email: true, name: true } } },
+      },
+    },
   });
-  // Placeholder: integrate with email/notification provider.
-  return { ok: true as const, message: "Reminder queued (demo — connect email to send)." };
+  if (!a) throw new Error("Assessment not found");
+
+  const title = a.title?.trim() || a.template.name;
+  let sent = 0;
+  for (const ev of a.evaluators) {
+    await notifyPendingReminder({
+      to: ev.user.email,
+      recipientName: ev.user.name,
+      assessmentTitle: title,
+      organizationName: a.organization.name,
+      evaluatorId: ev.id,
+    });
+    sent += 1;
+  }
+
+  revalidatePath("/admin/feedback-360");
+  return {
+    ok: true as const,
+    message:
+      sent === 0
+        ? "No pending evaluators — nothing to remind."
+        : `Reminder sent to ${sent} evaluator(s) (email when RESEND_API_KEY + EMAIL_FROM are set).`,
+  };
 }
 
 export async function extend360DueDate(assessmentId: string, extraDays: number) {

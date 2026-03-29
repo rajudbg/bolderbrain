@@ -16,6 +16,7 @@ import {
   Briefcase,
   MoreHorizontal,
   GraduationCap,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/app/manager", label: "My team", icon: Users },
   { href: "/app/actions", label: "My actions", icon: Target },
   { href: "/app/training", label: "My learning", icon: GraduationCap },
   { href: "/assessments", label: "My assessments", icon: ClipboardList },
@@ -164,7 +166,27 @@ export function AppShell({
                 <span className="font-heading font-semibold text-white">Menu</span>
               </div>
               <div className="p-3">
-                <NavLinks onNavigate={() => setOpen(false)} showAdminLink={showAdminLink} />
+                <nav className="flex flex-col gap-1">
+                  {(showAdminLink ? [...nav, adminNavItem] : nav).map(({ href, label, icon: Icon }) => {
+                    const active = navActive(pathname, href);
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          "focus-visible:ring-purple-500/50 flex items-center gap-3 rounded-r-xl border-l-2 py-2.5 pr-3 pl-3 text-sm font-medium transition-all duration-300 focus-visible:ring-2 focus-visible:outline-none",
+                          active
+                            ? "border-indigo-500 bg-white/5 text-white shadow-[0_0_24px_rgba(99,102,241,0.18)]"
+                            : "border-transparent text-white/40 hover:bg-white/[0.04] hover:text-white/80",
+                        )}
+                      >
+                        <Icon className={cn("size-4 shrink-0", active ? "text-indigo-400" : "text-white/40")} />
+                        {label}
+                      </Link>
+                    );
+                  })}
+                </nav>
               </div>
               <div className="space-y-2 border-t border-white/10 p-4">
                 <Button

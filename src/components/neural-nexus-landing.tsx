@@ -87,7 +87,13 @@ function NeuralConnections() {
 
 export function NeuralNexusLanding() {
   const { data: session, status } = useSession();
-  const reduceMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  /** Match SSR + first client paint: session and prefers-reduced-motion differ after hydration if applied immediately. */
+  const reduceMotion = mounted && Boolean(prefersReducedMotion);
   const [hover, setHover] = useState<PortalKey | null>(null);
   const [navigating, setNavigating] = useState<PortalKey | null>(null);
   /** Stable href — do not branch on session here (SSR vs client session = hydration mismatch). */
@@ -147,7 +153,7 @@ export function NeuralNexusLanding() {
         />
       )}
 
-      {status === "authenticated" && session?.user && (
+      {mounted && status === "authenticated" && session?.user && (
         <div className="relative z-30 border-b border-white/[0.06] bg-[#030305]/85 px-4 py-3 text-center text-sm text-white/70 backdrop-blur-md">
           Signed in as <span className="text-white/90">{session.user.email ?? "user"}</span>
           <span className="mx-2 text-white/30">·</span>
@@ -241,23 +247,21 @@ export function NeuralNexusLanding() {
               onHoverStart={() => setHover("organization")}
               onHoverEnd={() => setHover(null)}
             >
-              <div className="mb-2 flex justify-center lg:mb-3">
-                <span className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-1.5 text-[10px] font-semibold tracking-widest text-[#030305] uppercase shadow-[0_0_28px_rgba(245,158,11,0.4)]">
-                  For HR & Leaders
-                </span>
-              </div>
               <Link
                 href={ORG_HREF}
                 onClick={() => setNavigating("organization")}
                 className={cn(
-                  "group relative flex h-full min-h-[340px] flex-col rounded-[2rem] border border-amber-400/30 bg-gradient-to-b from-white/[0.1] to-white/[0.03] p-6 shadow-[0_0_60px_rgba(245,158,11,0.3)] backdrop-blur-3xl md:min-h-[420px] md:scale-110 md:p-10",
+                  "group relative flex h-full min-h-[340px] flex-col rounded-[2rem] border border-amber-400/30 bg-gradient-to-b from-white/[0.1] to-white/[0.03] p-6 pt-7 shadow-[0_0_60px_rgba(245,158,11,0.3)] backdrop-blur-3xl md:min-h-[420px] md:scale-110 md:p-10 md:pt-11",
                   "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-amber-200/25 before:to-transparent",
                   "hover:z-20 hover:scale-[1.06] hover:border-amber-300/45 hover:shadow-[0_0_88px_rgba(245,158,11,0.42)] md:hover:scale-[1.14]",
                   navigating === "organization" && "pointer-events-none opacity-75",
                 )}
               >
                 <div className="nexus-shimmer-overlay pointer-events-none absolute inset-0 overflow-hidden rounded-[2rem] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 shadow-lg md:size-16">
+                <span className="relative z-10 mb-5 self-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-1.5 text-[10px] font-semibold tracking-widest text-[#030305] uppercase shadow-[0_0_28px_rgba(245,158,11,0.4)] md:mb-6 md:-mt-1">
+                  For HR & Leaders
+                </span>
+                <div className="relative z-10 mb-6 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 shadow-lg md:size-16">
                   <Building2 className="size-7 text-white md:size-8" strokeWidth={1.75} />
                 </div>
                 <h2 className="font-heading text-2xl font-semibold text-white/95 md:text-3xl">Organization</h2>

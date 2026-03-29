@@ -10,6 +10,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   ResponsiveContainer,
+  Tooltip,
 } from "recharts";
 import type { TrainingDeltaPayload } from "@/lib/training-impact";
 import { cn } from "@/lib/utils";
@@ -125,7 +126,7 @@ export function TrainingResultsClient({
           <div className="h-[320px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radar} cx="50%" cy="50%" outerRadius="75%">
-                <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                <PolarGrid stroke="rgba(255,255,255,0.08)" fill="rgba(255,255,255,0.02)" />
                 <PolarAngleAxis dataKey="competency" tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 11 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: "rgba(255,255,255,0.35)" }} />
                 <Radar name="Pre" dataKey="pre" stroke="rgba(148,163,184,0.6)" fill="transparent" strokeDasharray="4 4" />
@@ -134,6 +135,20 @@ export function TrainingResultsClient({
                   dataKey="post"
                   stroke="rgba(251,191,36,0.9)"
                   fill="rgba(251,191,36,0.15)"
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "rgba(26,26,30,0.95)",
+                    backdropFilter: "blur(12px)",
+                  }}
+                  itemStyle={{ color: "rgba(255,255,255,0.9)" }}
+                  labelStyle={{ color: "rgba(255,255,255,0.6)", marginBottom: "4px" }}
+                  formatter={(value, name) => [
+                    typeof value === "number" ? value.toFixed(2) : String(value ?? "—"),
+                    String(name),
+                  ]}
                 />
               </RadarChart>
             </ResponsiveContainer>

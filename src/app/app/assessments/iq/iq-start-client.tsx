@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { startIqAttempt } from "./actions";
+import { cn } from "@/lib/utils";
 
 type TemplateRow = {
   id: string;
@@ -17,9 +18,21 @@ type TemplateRow = {
   _count: { questions: number };
 };
 
-export function IqStartClient({ templates }: { templates: TemplateRow[] }) {
+export function IqStartClient({
+  templates,
+  focusTemplateId,
+}: {
+  templates: TemplateRow[];
+  focusTemplateId?: string;
+}) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!focusTemplateId) return;
+    const el = document.getElementById(`iq-template-${focusTemplateId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusTemplateId]);
 
   async function onStart(templateId: string) {
     setPendingId(templateId);
@@ -50,7 +63,14 @@ export function IqStartClient({ templates }: { templates: TemplateRow[] }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {templates.map((t) => (
-        <Card key={t.id} className="border-border/60 shadow-sm">
+        <Card
+          key={t.id}
+          id={`iq-template-${t.id}`}
+          className={cn(
+            "border-border/60 shadow-sm",
+            focusTemplateId === t.id && "ring-2 ring-indigo-500/50 ring-offset-2",
+          )}
+        >
           <CardHeader>
             <div className="flex items-start gap-3">
               <div className="bg-primary/10 flex size-10 shrink-0 items-center justify-center rounded-lg">

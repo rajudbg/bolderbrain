@@ -1,7 +1,12 @@
 import { listIqTemplatesForUser } from "./actions";
 import { IqStartClient } from "./iq-start-client";
 
-export default async function IqAssessmentsPage() {
+export default async function IqAssessmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ focusTemplate?: string }>;
+}) {
+  const sp = await searchParams;
   const templates = await listIqTemplatesForUser();
 
   return (
@@ -13,7 +18,7 @@ export default async function IqAssessmentsPage() {
           Timed, single-session tests. Questions are drawn at random from your organization&apos;s bank. Results are available immediately after you submit.
         </p>
       </header>
-      <IqStartClient templates={templates} />
+      <IqStartClient templates={templates} focusTemplateId={sp.focusTemplate} />
     </div>
   );
 }

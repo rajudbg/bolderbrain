@@ -8,6 +8,8 @@ import {
   Building2,
   Download,
   GraduationCap,
+  Heart,
+  LayoutGrid,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -24,8 +26,11 @@ import { setAdminOrgSlugCookie } from "../org-actions";
 
 const nav = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/assessment-programs", label: "Programs", icon: LayoutGrid },
   { href: "/admin/competencies", label: "Competencies", icon: BarChart3 },
   { href: "/admin/training", label: "Training Impact", icon: GraduationCap },
+  /** EQ is taken in the employee app; link here so admins can open it without hunting. */
+  { href: "/app/assessments/eq", label: "EQ", icon: Heart },
   { href: "/admin/feedback-360", label: "360 feedback", icon: Users },
   { href: "/admin/talent", label: "Talent insights", icon: Target },
   { href: "/admin/usage", label: "Usage", icon: BarChart3 },

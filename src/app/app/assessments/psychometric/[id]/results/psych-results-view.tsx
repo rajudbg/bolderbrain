@@ -143,12 +143,15 @@ export function PsychResultsView({
             <div className="h-[380px] w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                  <PolarGrid stroke="var(--border)" />
+                  <PolarGrid 
+                    stroke="rgba(255,255,255,0.1)" 
+                    fill="rgba(255,255,255,0.02)"
+                  />
                   <PolarAngleAxis
                     dataKey="trait"
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    tick={{ fill: "rgba(255,255,255,0.55)", fontSize: 11 }}
                   />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 10 }} />
                   {visible.you && (
                     <Radar
                       name="You"
@@ -184,15 +187,20 @@ export function PsychResultsView({
                   <Tooltip
                     contentStyle={{
                       borderRadius: "12px",
-                      border: "1px solid var(--border)",
-                      background: "var(--card)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      background: "rgba(26,26,30,0.95)",
+                      backdropFilter: "blur(12px)",
                     }}
+                    itemStyle={{ color: "rgba(255,255,255,0.9)" }}
+                    labelStyle={{ color: "rgba(255,255,255,0.6)", marginBottom: "4px" }}
                     formatter={(value) => [
                       typeof value === "number" && Number.isFinite(value) ? value.toFixed(1) : "—",
-                      "",
+                      "Score",
                     ]}
                   />
-                  <Legend />
+                  <Legend 
+                    wrapperStyle={{ color: "rgba(255,255,255,0.7)" }}
+                  />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
@@ -220,7 +228,7 @@ export function PsychResultsView({
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Role fit (optional)</CardTitle>
-              <CardDescription>Compared to template “ideal” profiles — illustrative only.</CardDescription>
+              <CardDescription>Compared to template "ideal" profiles — illustrative only.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               {roleProfileKeys.map((k) => (

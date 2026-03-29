@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Heart } from "lucide-react";
 import { glassCardClassName } from "@/components/cerebral-glass";
@@ -19,9 +19,21 @@ type Row = {
   _count: { questions: number };
 };
 
-export function EqStartClient({ templates }: { templates: Row[] }) {
+export function EqStartClient({
+  templates,
+  focusTemplateId,
+}: {
+  templates: Row[];
+  focusTemplateId?: string;
+}) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!focusTemplateId) return;
+    const el = document.getElementById(`eq-template-${focusTemplateId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusTemplateId]);
 
   async function onStart(templateId: string) {
     setPendingId(templateId);
@@ -52,7 +64,15 @@ export function EqStartClient({ templates }: { templates: Row[] }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {templates.map((t) => (
-        <Card key={t.id} className={cn(glassCardClassName(), "border-amber-500/10")}>
+        <Card
+          key={t.id}
+          id={`eq-template-${t.id}`}
+          className={cn(
+            glassCardClassName(),
+            "border-amber-500/10",
+            focusTemplateId === t.id && "ring-2 ring-indigo-400/60 ring-offset-2 ring-offset-[#0F0F11]",
+          )}
+        >
           <CardHeader>
             <div className="flex items-start gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/25 to-orange-500/15 text-amber-300">

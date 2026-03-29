@@ -43,6 +43,8 @@ model User {
   psychTestAttempts       PsychTestAttempt[]
   trainingEnrollments     TrainingEnrollment[]
   trainingAttempts        TrainingAttempt[]
+  orgAssignmentsAssigned  OrgAssessmentAssignment[] @relation("OrgAssignmentAssignee")
+  orgAssignmentsCreated   OrgAssessmentAssignment[] @relation("OrgAssignmentAssigner")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -107,6 +109,7 @@ model Organization {
   psychTestAttempts          PsychTestAttempt[]
   trainingPrograms           TrainingProgram[]
   trainingContentTemplates   TrainingContentTemplate[]
+  orgAssessmentAssignments   OrgAssessmentAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -183,12 +186,51 @@ model AssessmentTemplate {
   eqTestAttempts EqTestAttempt[]
   psychTestAttempts PsychTestAttempt[]
   trainingPrograms  TrainingProgram[]
+  orgAssignments    OrgAssessmentAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([organizationId, key])
   @@index([organizationId])
+}
+
+/// HR-admin assignment for IQ / EQ / psychometric (launch + monitor + remind). 360 and training use native models.
+enum OrgAssessmentAssignmentKind {
+  IQ_COGNITIVE
+  EQ_ASSESSMENT
+  PSYCHOMETRIC
+}
+
+enum OrgAssessmentAssignmentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model OrgAssessmentAssignment {
+  id               String   @id @default(cuid())
+  organizationId   String
+  assignedUserId   String
+  assignerUserId   String?
+  kind             OrgAssessmentAssignmentKind
+  templateId       String
+  dueAt            DateTime?
+  status           OrgAssessmentAssignmentStatus @default(PENDING)
+  lastReminderAt   DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedUser User               @relation("OrgAssignmentAssignee", fields: [assignedUserId], references: [id], onDelete: Cascade)
+  assigner     User?              @relation("OrgAssignmentAssigner", fields: [assignerUserId], references: [id], onDelete: SetNull)
+  template     AssessmentTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([assignedUserId])
+  @@index([organizationId, status])
+  @@index([templateId])
 }
 
 model Question {

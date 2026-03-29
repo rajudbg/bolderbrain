@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { startOrResumePsychAttempt } from "./actions";
+import { cn } from "@/lib/utils";
 
 type Row = {
   id: string;
@@ -17,9 +18,21 @@ type Row = {
   _count: { questions: number };
 };
 
-export function PsychStartClient({ templates }: { templates: Row[] }) {
+export function PsychStartClient({
+  templates,
+  focusTemplateId,
+}: {
+  templates: Row[];
+  focusTemplateId?: string;
+}) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!focusTemplateId) return;
+    const el = document.getElementById(`psych-template-${focusTemplateId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusTemplateId]);
 
   async function onStart(templateId: string) {
     setPendingId(templateId);
@@ -50,7 +63,14 @@ export function PsychStartClient({ templates }: { templates: Row[] }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {templates.map((t) => (
-        <Card key={t.id} className="border-violet-200/50 shadow-sm dark:border-violet-900/30">
+        <Card
+          key={t.id}
+          id={`psych-template-${t.id}`}
+          className={cn(
+            "border-violet-200/50 shadow-sm dark:border-violet-900/30",
+            focusTemplateId === t.id && "ring-2 ring-indigo-500/50 ring-offset-2 dark:ring-offset-background",
+          )}
+        >
           <CardHeader>
             <div className="flex items-start gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-700 dark:text-violet-400">

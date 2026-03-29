@@ -1,7 +1,12 @@
 import { listEqTemplatesForUser } from "./actions";
 import { EqStartClient } from "./eq-start-client";
 
-export default async function EqAssessmentsPage() {
+export default async function EqAssessmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ focusTemplate?: string }>;
+}) {
+  const sp = await searchParams;
   const templates = await listEqTemplatesForUser();
 
   return (
@@ -16,7 +21,7 @@ export default async function EqAssessmentsPage() {
           automatically so you can resume anytime.
         </p>
       </header>
-      <EqStartClient templates={templates} />
+      <EqStartClient templates={templates} focusTemplateId={sp.focusTemplate} />
     </div>
   );
 }

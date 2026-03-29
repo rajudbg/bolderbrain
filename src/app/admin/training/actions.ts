@@ -13,7 +13,7 @@ import {
   TrainingStatus,
 } from "@/generated/prisma/enums";
 import { requireAdminOrganizationId } from "@/lib/admin/context";
-import { notifyEvaluatorAssigned } from "@/lib/email";
+import { notifyEvaluatorAssigned, notifyTrainingProgramReminder } from "@/lib/email";
 import prisma from "@/lib/prisma";
 import { buildRuntimeForAttempt } from "@/lib/training-content-attempts";
 
@@ -432,6 +432,72 @@ export async function updateTrainingAttendance(trainingProgramId: string, attend
     data: { attendanceCount: attended, attendanceExpected: expected },
   });
   revalidatePath(`/admin/training/${trainingProgramId}`);
+}
+
+export async function sendTrainingEnrollmentReminder(enrollmentId: string) {
+  const orgId = await requireAdminOrganizationId();
+  const enr = await prisma.trainingEnrollment.findFirst({
+    where: { id: enrollmentId, trainingProgram: { organizationId: orgId } },
+    include: {
+      user: { select: { email: true, name: true } },
+      trainingProgram: { include: { organization: { select: { name: true } } } },
+    },
+  });
+  if (!enr) throw new Error("Enrollment not found");
+
+  let detail: string;
+  if (enr.status === EnrollmentStatus.INVITED) {
+    detail = "Please complete your pre-training assessment and review the schedule in My learning.";
+  } else if (enr.status === EnrollmentStatus.PRE_COMPLETED || enr.status === EnrollmentStatus.TRAINING_COMPLETED) {
+    detail = "Please complete your post-training assessment when the window is open.";
+  } else {
+    detail = "Please check My learning for your training and assessment tasks.";
+  }
+
+  await notifyTrainingProgramReminder({
+    to: enr.user.email,
+    recipientName: enr.user.name,
+    organizationName: enr.trainingProgram.organization.name,
+    programName: enr.trainingProgram.name,
+    detail,
+  });
+  revalidatePath(`/admin/training/${enr.trainingProgramId}`);
+}
+
+/** Email everyone who has not finished the full post-training flow. */
+export async function sendTrainingRemindersIncomplete(trainingProgramId: string) {
+  const orgId = await requireAdminOrganizationId();
+  const program = await prisma.trainingProgram.findFirst({
+    where: { id: trainingProgramId, organizationId: orgId },
+    include: {
+      enrollments: { include: { user: { select: { email: true, name: true } } } },
+      organization: { select: { name: true } },
+    },
+  });
+  if (!program) throw new Error("Program not found");
+
+  let sent = 0;
+  for (const e of program.enrollments) {
+    if (e.status === EnrollmentStatus.POST_COMPLETED) continue;
+    let detail: string;
+    if (e.status === EnrollmentStatus.INVITED) {
+      detail = "Please complete your pre-training assessment and review the schedule in My learning.";
+    } else if (e.status === EnrollmentStatus.PRE_COMPLETED || e.status === EnrollmentStatus.TRAINING_COMPLETED) {
+      detail = "Please complete your post-training assessment when the window is open.";
+    } else {
+      detail = "Please check My learning for your training and assessment tasks.";
+    }
+    await notifyTrainingProgramReminder({
+      to: e.user.email,
+      recipientName: e.user.name,
+      organizationName: program.organization.name,
+      programName: program.name,
+      detail,
+    });
+    sent += 1;
+  }
+  revalidatePath(`/admin/training/${trainingProgramId}`);
+  return { sent };
 }
 
 export async function exportTrainingCsv(trainingProgramId: string): Promise<string> {

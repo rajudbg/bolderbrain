@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
-import { Bar, BarChart, Cell, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Heart, TrendingUp } from "lucide-react";
 import { EqAmbientBackground, glassCardClassName } from "@/components/cerebral-glass";
 import { Button } from "@/components/ui/button";
@@ -238,6 +238,21 @@ export function EqResultsView({
                     height={48}
                   />
                   <YAxis domain={[0, 100]} tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} width={32} />
+                  <Tooltip
+                    cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                    contentStyle={{
+                      borderRadius: "12px",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      background: "rgba(26,26,30,0.95)",
+                      backdropFilter: "blur(12px)",
+                    }}
+                    itemStyle={{ color: "rgba(255,255,255,0.9)" }}
+                    labelStyle={{ color: "rgba(255,255,255,0.6)", marginBottom: "4px" }}
+                    formatter={(value) => [
+                      typeof value === "number" ? `${value.toFixed(0)}%` : String(value ?? "—"),
+                      "Score",
+                    ]}
+                  />
                   <Bar dataKey="score" radius={[6, 6, 0, 0]} maxBarSize={48}>
                     {barData.map((d) => (
                       <Cell key={d.key} fill={thermalHex(d.score)} />

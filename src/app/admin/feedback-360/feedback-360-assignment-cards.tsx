@@ -172,10 +172,12 @@ export function Feedback360AssignmentCards({ rows }: { rows: Feedback360Row[] })
   async function bulkRemind() {
     setBusy("bulk");
     try {
+      const messages: string[] = [];
       for (const id of selected) {
-        await send360Reminder(id);
+        const r = await send360Reminder(id);
+        messages.push(r.message);
       }
-      toast.success(`Queued reminders for ${selected.size} assessment(s) (demo).`);
+      toast.success(messages[messages.length - 1] ?? "Reminders processed.");
       setSelected(new Set());
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
@@ -259,8 +261,8 @@ export function Feedback360AssignmentCards({ rows }: { rows: Feedback360Row[] })
                     onClick={async () => {
                       setBusy(r.id);
                       try {
-                        await send360Reminder(r.id);
-                        toast.success("Reminder queued (demo).");
+                        const res = await send360Reminder(r.id);
+                        toast.success(res.message);
                       } catch (e) {
                         toast.error(e instanceof Error ? e.message : "Failed");
                       } finally {

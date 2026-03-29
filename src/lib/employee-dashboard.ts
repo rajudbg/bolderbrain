@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { AssessmentTemplateType } from "@/generated/prisma/enums";
 import { getCompetencyTrendsForUser } from "@/lib/action-engine";
-import type { EqDomainKey } from "@/lib/eq-domains";
+import { domainDisplayName, type EqDomainKey, EQ_DOMAIN_KEYS } from "@/lib/eq-domains";
 import { buildEqDashboardInsights } from "@/lib/eq-dashboard-insights";
 import prisma from "@/lib/prisma";
 import type { Assessment360StoredResult } from "@/lib/assessment-360-result";
@@ -121,8 +121,13 @@ export async function getEmployeeDashboardPayload() {
   });
 
   let eqInsights: GeneratedInsight[] = [];
+  let eqDomainChart: { domain: string; score: number }[] | null = null;
   if (latestEq) {
     const ds = latestEq.domainScores as Record<EqDomainKey, number>;
+    eqDomainChart = EQ_DOMAIN_KEYS.map((k) => ({
+      domain: domainDisplayName(k),
+      score: Math.min(100, Math.round(ds[k] ?? 0)),
+    }));
     const pd = latestEq.percentileByDomain as Record<EqDomainKey, number>;
     let communication360: number | null = null;
     if (scores?.version === 1) {
@@ -216,6 +221,22 @@ export async function getEmployeeDashboardPayload() {
   }
 
   recent.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+  const statusCounts = { Completed: 0, "In progress": 0, Pending: 0 } as Record<
+    DashboardAssessmentRow["statusLabel"],
+    number
+  >;
+  for (const r of recent) {
+    statusCounts[r.statusLabel] += 1;
+  }
+  const assessmentActivityMix = (
+    [
+      { name: "Completed", count: statusCounts.Completed },
+      { name: "In progress", count: statusCounts["In progress"] },
+      { name: "Pending", count: statusCounts.Pending },
+    ] as const
+  ).filter((x) => x.count > 0);
+
   const recentAssessments = recent.slice(0, 8);
 
   const weekKey = getIsoWeekKey();
@@ -271,6 +292,8 @@ export async function getEmployeeDashboardPayload() {
       : null,
     insights,
     eqInsights,
+    eqDomainChart,
+    assessmentActivityMix,
     recentAssessments,
     weeklyFocus,
     streak: streakRow?.consecutiveWeeksCompleted ?? 0,

@@ -10,6 +10,15 @@ function gapColor(gap: number): string {
   return "#9ca3af";
 }
 
+function EmptyState() {
+  return (
+    <div className="flex h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-10 text-center">
+      <p className="text-sm font-medium text-white/70">No competency data available</p>
+      <p className="mt-1 text-xs text-white/45">Complete a 360 assessment to see gap analysis</p>
+    </div>
+  );
+}
+
 export function GapAnalysisChart({ scores }: { scores: Assessment360StoredResult }) {
   const data = useMemo(
     () =>
@@ -23,13 +32,13 @@ export function GapAnalysisChart({ scores }: { scores: Assessment360StoredResult
     [scores.byCompetency],
   );
 
-  if (data.length === 0) return null;
+  if (data.length === 0) return <EmptyState />;
 
   const chartHeight = Math.min(520, 48 + data.length * 44);
 
   return (
-    <div className="w-full min-w-0" style={{ height: chartHeight }}>
-      <div className="h-full w-full">
+    <div className="w-full min-w-0">
+      <div className="w-full min-w-0" style={{ height: chartHeight }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             layout="vertical"
@@ -51,12 +60,15 @@ export function GapAnalysisChart({ scores }: { scores: Assessment360StoredResult
               stroke="var(--border)"
             />
             <Tooltip
-              cursor={{ fill: "var(--muted)", opacity: 0.15 }}
+              cursor={{ fill: "rgba(255,255,255,0.04)" }}
               contentStyle={{
                 borderRadius: "12px",
-                border: "1px solid var(--border)",
-                background: "var(--card)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(26,26,30,0.95)",
+                backdropFilter: "blur(12px)",
               }}
+              itemStyle={{ color: "rgba(255,255,255,0.9)" }}
+              labelStyle={{ color: "rgba(255,255,255,0.6)", marginBottom: "4px" }}
               formatter={(value) => [
                 typeof value === "number" ? value.toFixed(2) : String(value ?? "—"),
                 "Gap (self − others)",
@@ -70,7 +82,7 @@ export function GapAnalysisChart({ scores }: { scores: Assessment360StoredResult
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <p className="text-muted-foreground mt-3 flex flex-wrap gap-4 text-xs">
+      <p className="text-muted-foreground mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs">
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2.5 rounded-sm bg-[#16a34a]" /> Self lower (humble)
         </span>

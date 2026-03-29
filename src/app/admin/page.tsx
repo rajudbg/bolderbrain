@@ -88,9 +88,9 @@ export default async function AdminOverviewPage() {
         alerts.unassigned360 > 0 ||
         alerts.overdue360 > 0 ||
         alerts.stalled360 > 0) && (
-        <Card className="border-amber-200/80 bg-amber-50/40 dark:border-amber-900/40 dark:bg-amber-950/20">
+        <Card className="border-amber-900/40 bg-amber-950/20">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-            <AlertTriangle className="text-amber-600 size-5 dark:text-amber-400" />
+            <AlertTriangle className="text-amber-400 size-5" />
             <CardTitle className="text-base">Actions required</CardTitle>
           </CardHeader>
           <CardContent>
@@ -136,6 +136,9 @@ export default async function AdminOverviewPage() {
           </CardHeader>
           <CardContent className="grid gap-2 sm:grid-cols-2">
             <Launch360ReviewButton className="col-span-full w-full justify-center sm:col-span-2" />
+            <Link href="/admin/assessment-programs" className={cn(buttonVariants({ variant: "outline" }))}>
+              Assessment programs
+            </Link>
             <Link href="/admin/competencies" className={cn(buttonVariants({ variant: "outline" }))}>
               Competency heatmap
             </Link>
@@ -182,7 +185,7 @@ function KpiCard({
   const up = trend && trend.delta > 0;
   const down = trend && trend.delta < 0;
   return (
-    <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+    <Card className="border-border/60 shadow-sm">
       <CardHeader className="pb-2">
         <CardDescription>{title}</CardDescription>
         <CardTitle className="text-3xl tabular-nums">{value}</CardTitle>
@@ -191,8 +194,8 @@ function KpiCard({
         <p>{sub}</p>
         {trend ? (
           <p className="flex items-center gap-1 font-medium text-foreground">
-            {up ? <ArrowUpRight className="size-3.5 text-emerald-600" /> : null}
-            {down ? <ArrowDownRight className="size-3.5 text-rose-600" /> : null}
+            {up ? <ArrowUpRight className="size-3.5 text-emerald-500" /> : null}
+            {down ? <ArrowDownRight className="size-3.5 text-rose-500" /> : null}
             {!up && !down ? <span className="text-muted-foreground">—</span> : null}
             {trend.label}: {trend.delta > 0 ? "+" : ""}
             {trend.delta.toFixed(2)}

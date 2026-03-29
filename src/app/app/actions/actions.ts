@@ -7,7 +7,7 @@ import { UserActionStatus } from "@/generated/prisma/enums";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
-export async function completeMyUserAction(userActionId: string) {
+export async function completeMyUserAction(userActionId: string, reflection?: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -23,6 +23,7 @@ export async function completeMyUserAction(userActionId: string) {
     data: {
       status: UserActionStatus.COMPLETED,
       completedAt: new Date(),
+      notes: reflection?.trim() || null,
     },
   });
 

@@ -1,7 +1,12 @@
 import { listPsychTemplatesForUser } from "./actions";
 import { PsychStartClient } from "./psych-start-client";
 
-export default async function PsychAssessmentsPage() {
+export default async function PsychAssessmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ focusTemplate?: string }>;
+}) {
+  const sp = await searchParams;
   const templates = await listPsychTemplatesForUser();
 
   return (
@@ -16,7 +21,7 @@ export default async function PsychAssessmentsPage() {
           can pause and return.
         </p>
       </header>
-      <PsychStartClient templates={templates} />
+      <PsychStartClient templates={templates} focusTemplateId={sp.focusTemplate} />
     </div>
   );
 }

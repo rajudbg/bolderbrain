@@ -21,6 +21,15 @@ const COLORS = {
 
 type SeriesKey = keyof typeof COLORS;
 
+function EmptyState() {
+  return (
+    <div className="flex h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-10 text-center">
+      <p className="text-sm font-medium text-white/70">No behavior data available</p>
+      <p className="mt-1 text-xs text-white/45">Complete a 360 assessment to see your competency radar</p>
+    </div>
+  );
+}
+
 export function BehaviorRadar({ scores }: { scores: Assessment360StoredResult }) {
   const data = useMemo(() => {
     return scores.byCompetency.map((c) => ({
@@ -41,7 +50,7 @@ export function BehaviorRadar({ scores }: { scores: Assessment360StoredResult })
 
   const toggle = (k: SeriesKey) => setVisible((v) => ({ ...v, [k]: !v[k] }));
 
-  if (data.length === 0) return null;
+  if (data.length === 0) return <EmptyState />;
 
   return (
     <div className="w-full space-y-4">
@@ -70,7 +79,10 @@ export function BehaviorRadar({ scores }: { scores: Assessment360StoredResult })
       <div className="h-[380px] w-full min-w-0">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="75%" data={data}>
-            <PolarGrid stroke="rgba(255,255,255,0.1)" />
+            <PolarGrid 
+              stroke="rgba(255,255,255,0.1)" 
+              fill="rgba(255,255,255,0.02)"
+            />
             <PolarAngleAxis dataKey="competency" tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 11 }} />
             <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 10 }} />
             {visible.self && (
@@ -108,14 +120,16 @@ export function BehaviorRadar({ scores }: { scores: Assessment360StoredResult })
             )}
             <Tooltip
               contentStyle={{
-                borderRadius: "16px",
+                borderRadius: "12px",
                 border: "1px solid rgba(255,255,255,0.1)",
                 background: "rgba(26,26,30,0.95)",
                 backdropFilter: "blur(12px)",
               }}
-              formatter={(value) => [
+              itemStyle={{ color: "rgba(255,255,255,0.9)" }}
+              labelStyle={{ color: "rgba(255,255,255,0.6)", marginBottom: "4px" }}
+              formatter={(value, name) => [
                 typeof value === "number" ? value.toFixed(2) : String(value ?? "—"),
-                "",
+                String(name),
               ]}
             />
           </RadarChart>
