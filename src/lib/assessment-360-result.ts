@@ -165,5 +165,17 @@ export async function tryFinalizeAssessmentResult(assessmentId: string): Promise
 
   await onAssessment360FinalizedForTraining(assessmentId);
 
+  try {
+    const { onAssessment360CompletedForAi } = await import("@/lib/assessment/hooks");
+    await onAssessment360CompletedForAi({
+      assessmentId,
+      subjectUserId: assessment.subjectUserId,
+      organizationId: assessment.organizationId,
+      scores: payload,
+    });
+  } catch (e) {
+    console.error("[ai] post-360 insight pipeline failed", e);
+  }
+
   return payload;
 }

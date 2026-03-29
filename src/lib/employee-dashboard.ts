@@ -240,7 +240,7 @@ export async function getEmployeeDashboardPayload() {
   const recentAssessments = recent.slice(0, 8);
 
   const weekKey = getIsoWeekKey();
-  const [weeklyActions, streakRow, competencyTrends] = await Promise.all([
+  const [weeklyActions, streakRow, competencyTrends, aiInsightRow] = await Promise.all([
     prisma.userAction.findMany({
       where: { userId, weekKey },
       include: {
@@ -256,6 +256,13 @@ export async function getEmployeeDashboardPayload() {
     assessmentId
       ? getCompetencyTrendsForUser(userId, assessmentId)
       : Promise.resolve([]),
+    assessmentId
+      ? prisma.aIInsight.findUnique({
+          where: {
+            userId_assessmentId: { userId, assessmentId },
+          },
+        })
+      : Promise.resolve(null),
   ]);
 
   const weeklyFocus = {
@@ -274,6 +281,12 @@ export async function getEmployeeDashboardPayload() {
     total: weeklyActions.filter((u) => u.status !== "DISMISSED").length,
   };
 
+  type SmartActionHint = { title: string; description: string; resource: string };
+  let aiSmartActions: SmartActionHint[] = [];
+  if (aiInsightRow?.smartActionsJson && Array.isArray(aiInsightRow.smartActionsJson)) {
+    aiSmartActions = aiInsightRow.smartActionsJson as SmartActionHint[];
+  }
+
   return {
     user: {
       name: session.user.name ?? null,
@@ -291,6 +304,17 @@ export async function getEmployeeDashboardPayload() {
         }
       : null,
     insights,
+    aiInsight: aiInsightRow
+      ? {
+          id: aiInsightRow.id,
+          finalText: aiInsightRow.finalText,
+          source: aiInsightRow.source,
+          userRating: aiInsightRow.userRating,
+          generationTimeMs: aiInsightRow.generationTimeMs,
+          modelUsed: aiInsightRow.modelUsed,
+        }
+      : null,
+    aiSmartActions,
     eqInsights,
     eqDomainChart,
     assessmentActivityMix,

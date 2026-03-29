@@ -23,10 +23,8 @@ import { parseEqScenarioOptions } from "@/lib/eq-question-config";
 import { computeEqAssessmentResult, type EqResponseEntry } from "@/lib/eq-scoring";
 import { computeIqScores } from "@/lib/iq-scoring";
 import { getIsoWeekKey, previousWeekKey } from "@/lib/iso-week";
-import { DEMO_ORG_SLUG } from "@/lib/demo-constants";
+import { DEMO_ORG_SLUG, DEMO_ORG_SLUGS } from "@/lib/demo-constants";
 import prisma from "@/lib/prisma";
-
-const DEMO_SETTINGS = { isDemo: true, name: "Acme Corp" };
 
 type MemberSeed = {
   email: string;
@@ -35,6 +33,7 @@ type MemberSeed = {
   department: string;
 };
 
+/** Primary pilot — full team (360, IQ, EQ, psych, actions). */
 const MEMBERS: MemberSeed[] = [
   { email: "admin@acme.com", name: "Alex Admin", role: OrganizationRole.ADMIN, department: "Leadership" },
   { email: "demo@acme.com", name: "Dana Demo", role: OrganizationRole.EMPLOYEE, department: "Engineering" },
@@ -50,6 +49,129 @@ const MEMBERS: MemberSeed[] = [
   { email: "lead2@acme.com", name: "Morgan Exec", role: OrganizationRole.EMPLOYEE, department: "Leadership" },
 ];
 
+/** Beta Industries — same role mix as Acme for cross-tenant E2E. */
+const BETA_MEMBERS: MemberSeed[] = [
+  { email: "admin@beta-demo.com", name: "Blake Admin", role: OrganizationRole.ADMIN, department: "Leadership" },
+  { email: "demo@beta-demo.com", name: "Dana Beta", role: OrganizationRole.EMPLOYEE, department: "Engineering" },
+  { email: "eng2@beta-demo.com", name: "Evan Beta", role: OrganizationRole.EMPLOYEE, department: "Engineering" },
+  { email: "eng3@beta-demo.com", name: "Emma Beta", role: OrganizationRole.EMPLOYEE, department: "Engineering" },
+  { email: "eng4@beta-demo.com", name: "Eric Beta", role: OrganizationRole.EMPLOYEE, department: "Engineering" },
+  { email: "sales1@beta-demo.com", name: "Sam Beta", role: OrganizationRole.EMPLOYEE, department: "Sales" },
+  { email: "sales2@beta-demo.com", name: "Sara Beta", role: OrganizationRole.EMPLOYEE, department: "Sales" },
+  { email: "sales3@beta-demo.com", name: "Steve Beta", role: OrganizationRole.EMPLOYEE, department: "Sales" },
+  { email: "sales4@beta-demo.com", name: "Sofia Beta", role: OrganizationRole.EMPLOYEE, department: "Sales" },
+  { email: "lead1@beta-demo.com", name: "Jordan Beta", role: OrganizationRole.EMPLOYEE, department: "Leadership" },
+  { email: "lead2@beta-demo.com", name: "Morgan Beta", role: OrganizationRole.EMPLOYEE, department: "Leadership" },
+];
+
+const GAMMA_MEMBERS: MemberSeed[] = BETA_MEMBERS.map((m) => ({
+  ...m,
+  email: m.email.replace("beta-demo", "gamma-demo"),
+  name: m.name.replace("Beta", "Gamma"),
+}));
+
+const DELTA_MEMBERS: MemberSeed[] = BETA_MEMBERS.map((m) => ({
+  ...m,
+  email: m.email.replace("beta-demo", "delta-demo"),
+  name: m.name.replace("Beta", "Delta"),
+}));
+
+type Demo360Pattern = {
+  subject: string;
+  evals: { email: string; role: EvaluatorRole }[];
+  matrix: number[][];
+};
+
+/** Same Likert matrices as legacy Acme demo (4 evaluators × 6 questions = 24). */
+const MATRIX_DEMO_A = [
+  5, 3, 3, 4, 5, 3, 3, 4, 5, 2, 3, 3, 5, 4, 5, 3, 4, 3, 5, 3, 3, 4, 4, 4,
+];
+const MATRIX_DEMO_B = [
+  3, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 5, 3, 3, 4, 4, 4, 3, 3, 4, 4, 4, 3, 3,
+];
+const MATRIX_DEMO_C = [
+  4, 4, 3, 5, 4, 3, 4, 4, 5, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 3, 4, 4, 4,
+];
+
+function acme360Patterns(): Demo360Pattern[] {
+  return [
+    {
+      subject: "demo@acme.com",
+      evals: [
+        { email: "demo@acme.com", role: EvaluatorRole.SELF },
+        { email: "eng2@acme.com", role: EvaluatorRole.PEER },
+        { email: "eng3@acme.com", role: EvaluatorRole.PEER },
+        { email: "admin@acme.com", role: EvaluatorRole.MANAGER },
+      ],
+      matrix: [MATRIX_DEMO_A],
+    },
+    {
+      subject: "eng2@acme.com",
+      evals: [
+        { email: "eng2@acme.com", role: EvaluatorRole.SELF },
+        { email: "demo@acme.com", role: EvaluatorRole.PEER },
+        { email: "eng4@acme.com", role: EvaluatorRole.PEER },
+        { email: "admin@acme.com", role: EvaluatorRole.MANAGER },
+      ],
+      matrix: [MATRIX_DEMO_B],
+    },
+    {
+      subject: "sales1@acme.com",
+      evals: [
+        { email: "sales1@acme.com", role: EvaluatorRole.SELF },
+        { email: "sales2@acme.com", role: EvaluatorRole.PEER },
+        { email: "sales3@acme.com", role: EvaluatorRole.PEER },
+        { email: "lead1@acme.com", role: EvaluatorRole.MANAGER },
+      ],
+      matrix: [MATRIX_DEMO_C],
+    },
+  ];
+}
+
+function tenant360Patterns(domain: "beta-demo.com" | "gamma-demo.com" | "delta-demo.com"): Demo360Pattern[] {
+  const admin = `admin@${domain}`;
+  const demo = `demo@${domain}`;
+  const eng2 = `eng2@${domain}`;
+  const eng3 = `eng3@${domain}`;
+  const eng4 = `eng4@${domain}`;
+  const sales1 = `sales1@${domain}`;
+  const sales2 = `sales2@${domain}`;
+  const sales3 = `sales3@${domain}`;
+  const lead1 = `lead1@${domain}`;
+  return [
+    {
+      subject: demo,
+      evals: [
+        { email: demo, role: EvaluatorRole.SELF },
+        { email: eng2, role: EvaluatorRole.PEER },
+        { email: eng3, role: EvaluatorRole.PEER },
+        { email: admin, role: EvaluatorRole.MANAGER },
+      ],
+      matrix: [MATRIX_DEMO_A],
+    },
+    {
+      subject: eng2,
+      evals: [
+        { email: eng2, role: EvaluatorRole.SELF },
+        { email: demo, role: EvaluatorRole.PEER },
+        { email: eng4, role: EvaluatorRole.PEER },
+        { email: admin, role: EvaluatorRole.MANAGER },
+      ],
+      matrix: [MATRIX_DEMO_B],
+    },
+    {
+      subject: sales1,
+      evals: [
+        { email: sales1, role: EvaluatorRole.SELF },
+        { email: sales2, role: EvaluatorRole.PEER },
+        { email: sales3, role: EvaluatorRole.PEER },
+        { email: lead1, role: EvaluatorRole.MANAGER },
+      ],
+      matrix: [MATRIX_DEMO_C],
+    },
+  ];
+}
+
 function bestScenarioOption(config: unknown): string {
   const opts = parseEqScenarioOptions(config);
   let best = opts[0];
@@ -62,7 +184,7 @@ function bestScenarioOption(config: unknown): string {
   return best.id;
 }
 
-async function seedCompetenciesAndActions(orgId: string) {
+async function seedCompetenciesAndActions(orgId: string, orgDisplayName: string) {
   const defs = [
     {
       key: "communication",
@@ -97,7 +219,7 @@ async function seedCompetenciesAndActions(orgId: string) {
         organizationId: orgId,
         key: d.key,
         name: d.name,
-        description: `${d.name} development area for Acme Corp.`,
+        description: `${d.name} development area for ${orgDisplayName}.`,
         sortOrder: out.length,
         isActive: true,
       },
@@ -127,13 +249,16 @@ async function seed360(
   orgId: string,
   userByEmail: Map<string, { id: string }>,
   competencyKeys: string[],
+  patterns: Demo360Pattern[],
+  orgName: string,
+  adminEmail: string,
 ) {
   const template = await prisma.assessmentTemplate.create({
     data: {
       organizationId: orgId,
       type: AssessmentTemplateType.BEHAVIORAL_360,
       key: "demo-360-core",
-      name: "Acme 360 — Core competencies",
+      name: `${orgName} 360 — Core competencies`,
       description: "Multi-rater feedback on communication, leadership, and collaboration.",
       scoringStrategy: ScoringStrategy.MULTI_SOURCE,
       config: {},
@@ -175,52 +300,6 @@ async function seed360(
     questions.push({ id: row.id, traitCategory: row.traitCategory });
   }
 
-  type Pattern = {
-    subject: string;
-    evals: { email: string; role: EvaluatorRole }[];
-    /** per question index 0..5, per evaluator email */
-    matrix: number[][];
-  };
-
-  const patterns: Pattern[] = [
-    {
-      subject: "demo@acme.com",
-      evals: [
-        { email: "demo@acme.com", role: EvaluatorRole.SELF },
-        { email: "eng2@acme.com", role: EvaluatorRole.PEER },
-        { email: "eng3@acme.com", role: EvaluatorRole.PEER },
-        { email: "admin@acme.com", role: EvaluatorRole.MANAGER },
-      ],
-      matrix: [
-        [5, 3, 3, 4, 5, 3, 3, 4, 5, 2, 3, 3, 5, 4, 5, 3, 4, 3, 5, 3, 3, 4, 4, 4],
-      ],
-    },
-    {
-      subject: "eng2@acme.com",
-      evals: [
-        { email: "eng2@acme.com", role: EvaluatorRole.SELF },
-        { email: "demo@acme.com", role: EvaluatorRole.PEER },
-        { email: "eng4@acme.com", role: EvaluatorRole.PEER },
-        { email: "admin@acme.com", role: EvaluatorRole.MANAGER },
-      ],
-      matrix: [
-        [3, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 5, 3, 3, 4, 4, 4, 3, 3, 4, 4, 4, 3, 3],
-      ],
-    },
-    {
-      subject: "sales1@acme.com",
-      evals: [
-        { email: "sales1@acme.com", role: EvaluatorRole.SELF },
-        { email: "sales2@acme.com", role: EvaluatorRole.PEER },
-        { email: "sales3@acme.com", role: EvaluatorRole.PEER },
-        { email: "lead1@acme.com", role: EvaluatorRole.MANAGER },
-      ],
-      matrix: [
-        [4, 4, 3, 5, 4, 3, 4, 4, 5, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 3, 4, 4, 4],
-      ],
-    },
-  ];
-
   const qOrder = questions;
   if (qOrder.length !== 6) {
     throw new Error(`Expected 6 demo 360 questions, got ${qOrder.length}`);
@@ -238,7 +317,7 @@ async function seed360(
         subjectUserId: subject.id,
         title: `360 — Wave ${pi + 1}`,
         status: AssessmentInstanceStatus.ACTIVE,
-        createdByUserId: userByEmail.get("admin@acme.com")!.id,
+        createdByUserId: userByEmail.get(adminEmail)!.id,
         dueAt: new Date(Date.now() + 7 * 86400000),
       },
     });
@@ -282,15 +361,20 @@ async function seed360(
   }
 }
 
-async function seedIqDemo(orgId: string, userByEmail: Map<string, { id: string }>, templateId: string) {
+async function seedIqDemo(
+  orgId: string,
+  userByEmail: Map<string, { id: string }>,
+  templateId: string,
+  emails: { demo: string; eng2: string },
+) {
   const pool = await prisma.question.findMany({
     where: { templateId, isActive: true },
     orderBy: [{ sortOrder: "asc" }, { key: "asc" }],
   });
   if (pool.length < 50) throw new Error("IQ pool should have 50 questions");
 
-  const demoUser = userByEmail.get("demo@acme.com")!;
-  const engUser = userByEmail.get("eng2@acme.com")!;
+  const demoUser = userByEmail.get(emails.demo)!;
+  const engUser = userByEmail.get(emails.eng2)!;
   const now = new Date();
   const endsFar = new Date(now.getTime() + 3600_000);
 
@@ -371,12 +455,17 @@ async function seedIqDemo(orgId: string, userByEmail: Map<string, { id: string }
   });
 }
 
-async function seedEqDemo(orgId: string, userByEmail: Map<string, { id: string }>, templateId: string) {
+async function seedEqDemo(
+  orgId: string,
+  userByEmail: Map<string, { id: string }>,
+  templateId: string,
+  demoEmail: string,
+) {
   const questions = await prisma.question.findMany({
     where: { templateId, isActive: true },
     orderBy: [{ sortOrder: "asc" }],
   });
-  const demoUser = userByEmail.get("demo@acme.com")!;
+  const demoUser = userByEmail.get(demoEmail)!;
   const questionIds = questions.map((q) => q.id);
   const raw: Record<string, EqResponseEntry> = {};
 
@@ -431,14 +520,19 @@ async function seedEqDemo(orgId: string, userByEmail: Map<string, { id: string }
   });
 }
 
-async function seedPsychInProgress(orgId: string, userByEmail: Map<string, { id: string }>, templateId: string) {
+async function seedPsychInProgress(
+  orgId: string,
+  userByEmail: Map<string, { id: string }>,
+  templateId: string,
+  participantEmail: string,
+) {
   const qs = await prisma.question.findMany({
     where: { templateId, isActive: true },
     take: 5,
     orderBy: { sortOrder: "asc" },
   });
   if (qs.length === 0) return;
-  const u = userByEmail.get("sales2@acme.com")!;
+  const u = userByEmail.get(participantEmail)!;
   const now = new Date();
   await prisma.psychTestAttempt.create({
     data: {
@@ -455,13 +549,13 @@ async function seedPsychInProgress(orgId: string, userByEmail: Map<string, { id:
   });
 }
 
-async function seedIqTemplate(orgId: string) {
+async function seedIqTemplate(orgId: string, orgName: string, iqKeyPrefix: string) {
   const template = await prisma.assessmentTemplate.create({
     data: {
       organizationId: orgId,
       type: AssessmentTemplateType.IQ_COGNITIVE,
       key: "demo-iq-bank",
-      name: "Acme cognitive bank",
+      name: `${orgName} cognitive bank`,
       description: "Fifty pooled items for demo scoring (~standard score 118 at ~82% correct).",
       scoringStrategy: ScoringStrategy.SUM_CORRECT,
       config: {
@@ -542,7 +636,7 @@ async function seedIqTemplate(orgId: string) {
   for (let r = 0; r < 10; r++) {
     for (let i = 0; i < stems.length; i++) {
       const s = stems[i]!;
-      const key = `iq_acme_${r}_${i}`;
+      const key = `iq_${iqKeyPrefix}_${r}_${i}`;
       const config = {
         prompt: `${s.prompt} (set ${r + 1})`,
         type: "single_choice" as const,
@@ -570,13 +664,13 @@ async function seedIqTemplate(orgId: string) {
   return template.id;
 }
 
-async function seedEqTemplate(orgId: string) {
+async function seedEqTemplate(orgId: string, orgName: string) {
   const template = await prisma.assessmentTemplate.create({
     data: {
       organizationId: orgId,
       type: AssessmentTemplateType.EQ_ASSESSMENT,
       key: "demo-eq-bank",
-      name: "Acme EQ profile",
+      name: `${orgName} EQ profile`,
       description: "Ten items across Goleman domains.",
       scoringStrategy: ScoringStrategy.TRAIT_AGGREGATE,
       config: {},
@@ -747,13 +841,13 @@ async function seedEqTemplate(orgId: string) {
   return template.id;
 }
 
-async function seedPsychTemplate(orgId: string) {
+async function seedPsychTemplate(orgId: string, orgName: string) {
   const template = await prisma.assessmentTemplate.create({
     data: {
       organizationId: orgId,
       type: AssessmentTemplateType.PSYCHOMETRIC,
       key: "demo-psych-mini",
-      name: "Acme personality mini",
+      name: `${orgName} personality mini`,
       description: "Short forced-choice demo (ipsative triads).",
       scoringStrategy: ScoringStrategy.TRAIT_AGGREGATE,
       config: { itemsPerPage: 5, retakeCooldownMonths: 12 },
@@ -935,15 +1029,8 @@ async function seedManualActions(
   orgId: string,
   userByEmail: Map<string, { id: string }>,
   competencyBundles: { competencyId: string; actionIds: string[] }[],
+  pairs: Array<{ email: string; actionIndex: number; compIndex: number; status: UserActionStatus; wk: string }>,
 ) {
-  const week = getIsoWeekKey();
-  const prev = previousWeekKey(week);
-  const pairs: Array<{ email: string; actionIndex: number; compIndex: number; status: UserActionStatus; wk: string }> = [
-    { email: "eng3@acme.com", compIndex: 0, actionIndex: 0, status: UserActionStatus.COMPLETED, wk: prev },
-    { email: "sales4@acme.com", compIndex: 1, actionIndex: 1, status: UserActionStatus.IN_PROGRESS, wk: week },
-    { email: "lead2@acme.com", compIndex: 2, actionIndex: 0, status: UserActionStatus.ASSIGNED, wk: week },
-  ];
-
   for (const row of pairs) {
     const u = userByEmail.get(row.email);
     const bundle = competencyBundles[row.compIndex];
@@ -965,7 +1052,34 @@ async function seedManualActions(
 }
 
 export async function wipeDemoOrganization(): Promise<void> {
-  await prisma.organization.deleteMany({ where: { slug: DEMO_ORG_SLUG } });
+  await prisma.organization.deleteMany({ where: { slug: { in: [...DEMO_ORG_SLUGS] } } });
+}
+
+type OrgSeedConfig = {
+  slug: string;
+  name: string;
+  members: MemberSeed[];
+  patterns360: Demo360Pattern[];
+  iqKeyPrefix: string;
+  adminEmail: string;
+  demoEmail: string;
+  eng2Email: string;
+  psychParticipantEmail: string;
+  manualPairs: Array<{
+    email: string;
+    actionIndex: number;
+    compIndex: number;
+    status: UserActionStatus;
+    wk: string;
+  }>;
+};
+
+function manualPairsForTenant(domain: string, week: string, prev: string) {
+  return [
+    { email: `eng3@${domain}`, compIndex: 0, actionIndex: 0, status: UserActionStatus.COMPLETED, wk: prev },
+    { email: `sales4@${domain}`, compIndex: 1, actionIndex: 1, status: UserActionStatus.IN_PROGRESS, wk: week },
+    { email: `lead2@${domain}`, compIndex: 2, actionIndex: 0, status: UserActionStatus.ASSIGNED, wk: week },
+  ];
 }
 
 export async function seedDemoOrganization(): Promise<void> {
@@ -974,67 +1088,126 @@ export async function seedDemoOrganization(): Promise<void> {
 
   await wipeDemoOrganization();
 
-  const org = await prisma.organization.create({
-    data: {
+  const week = getIsoWeekKey();
+  const prev = previousWeekKey(week);
+
+  const orgs: OrgSeedConfig[] = [
+    {
       slug: DEMO_ORG_SLUG,
       name: "Acme Corp",
-      settings: DEMO_SETTINGS as object,
+      members: MEMBERS,
+      patterns360: acme360Patterns(),
+      iqKeyPrefix: "acme",
+      adminEmail: "admin@acme.com",
+      demoEmail: "demo@acme.com",
+      eng2Email: "eng2@acme.com",
+      psychParticipantEmail: "sales2@acme.com",
+      manualPairs: [
+        { email: "eng3@acme.com", compIndex: 0, actionIndex: 0, status: UserActionStatus.COMPLETED, wk: prev },
+        { email: "sales4@acme.com", compIndex: 1, actionIndex: 1, status: UserActionStatus.IN_PROGRESS, wk: week },
+        { email: "lead2@acme.com", compIndex: 2, actionIndex: 0, status: UserActionStatus.ASSIGNED, wk: week },
+      ],
     },
-  });
+    {
+      slug: "beta-demo",
+      name: "Beta Industries",
+      members: BETA_MEMBERS,
+      patterns360: tenant360Patterns("beta-demo.com"),
+      iqKeyPrefix: "beta",
+      adminEmail: "admin@beta-demo.com",
+      demoEmail: "demo@beta-demo.com",
+      eng2Email: "eng2@beta-demo.com",
+      psychParticipantEmail: "sales2@beta-demo.com",
+      manualPairs: manualPairsForTenant("beta-demo.com", week, prev),
+    },
+    {
+      slug: "gamma-demo",
+      name: "Gamma Labs",
+      members: GAMMA_MEMBERS,
+      patterns360: tenant360Patterns("gamma-demo.com"),
+      iqKeyPrefix: "gamma",
+      adminEmail: "admin@gamma-demo.com",
+      demoEmail: "demo@gamma-demo.com",
+      eng2Email: "eng2@gamma-demo.com",
+      psychParticipantEmail: "sales2@gamma-demo.com",
+      manualPairs: manualPairsForTenant("gamma-demo.com", week, prev),
+    },
+    {
+      slug: "delta-demo",
+      name: "Delta Systems",
+      members: DELTA_MEMBERS,
+      patterns360: tenant360Patterns("delta-demo.com"),
+      iqKeyPrefix: "delta",
+      adminEmail: "admin@delta-demo.com",
+      demoEmail: "demo@delta-demo.com",
+      eng2Email: "eng2@delta-demo.com",
+      psychParticipantEmail: "sales2@delta-demo.com",
+      manualPairs: manualPairsForTenant("delta-demo.com", week, prev),
+    },
+  ];
 
-  const userByEmail = new Map<string, { id: string }>();
-
-  for (const m of MEMBERS) {
-    const hash = m.email === "admin@acme.com" ? passwordAdmin : passwordDemo;
-    /** Upsert: wipeDemoOrganization removes org + memberships; user.create would fail on duplicate email and leave users without org rows. */
-    const user = await prisma.user.upsert({
-      where: { email: m.email },
-      create: {
-        email: m.email,
-        name: m.name,
-        passwordHash: hash,
-        isActive: true,
-      },
-      update: {
-        name: m.name,
-        passwordHash: hash,
-        isActive: true,
+  for (const cfg of orgs) {
+    const org = await prisma.organization.create({
+      data: {
+        slug: cfg.slug,
+        name: cfg.name,
+        settings: { isDemo: true, name: cfg.name } as object,
       },
     });
-    await prisma.organizationMember.upsert({
-      where: {
-        userId_organizationId: {
-          userId: user.id,
-          organizationId: org.id,
+
+    const userByEmail = new Map<string, { id: string }>();
+
+    for (const m of cfg.members) {
+      const hash = m.email === cfg.adminEmail ? passwordAdmin : passwordDemo;
+      const user = await prisma.user.upsert({
+        where: { email: m.email },
+        create: {
+          email: m.email,
+          name: m.name,
+          passwordHash: hash,
+          isActive: true,
         },
-      },
-      create: {
-        organizationId: org.id,
-        userId: user.id,
-        role: m.role,
-        department: m.department,
-      },
-      update: {
-        role: m.role,
-        department: m.department,
-      },
-    });
-    userByEmail.set(m.email, { id: user.id });
+        update: {
+          name: m.name,
+          passwordHash: hash,
+          isActive: true,
+        },
+      });
+      await prisma.organizationMember.upsert({
+        where: {
+          userId_organizationId: {
+            userId: user.id,
+            organizationId: org.id,
+          },
+        },
+        create: {
+          organizationId: org.id,
+          userId: user.id,
+          role: m.role,
+          department: m.department,
+        },
+        update: {
+          role: m.role,
+          department: m.department,
+        },
+      });
+      userByEmail.set(m.email, { id: user.id });
+    }
+
+    const competencyBundles = await seedCompetenciesAndActions(org.id, cfg.name);
+    const competencyKeys = ["communication", "leadership", "collaboration"];
+
+    await seed360(org.id, userByEmail, competencyKeys, cfg.patterns360, cfg.name, cfg.adminEmail);
+
+    const iqTid = await seedIqTemplate(org.id, cfg.name, cfg.iqKeyPrefix);
+    const eqTid = await seedEqTemplate(org.id, cfg.name);
+    const psychTid = await seedPsychTemplate(org.id, cfg.name);
+
+    await seedIqDemo(org.id, userByEmail, iqTid, { demo: cfg.demoEmail, eng2: cfg.eng2Email });
+    await seedEqDemo(org.id, userByEmail, eqTid, cfg.demoEmail);
+    await seedPsychInProgress(org.id, userByEmail, psychTid, cfg.psychParticipantEmail);
+    await seedManualActions(org.id, userByEmail, competencyBundles, cfg.manualPairs);
   }
-
-  const competencyBundles = await seedCompetenciesAndActions(org.id);
-  const competencyKeys = ["communication", "leadership", "collaboration"];
-
-  await seed360(org.id, userByEmail, competencyKeys);
-
-  const iqTid = await seedIqTemplate(org.id);
-  const eqTid = await seedEqTemplate(org.id);
-  const psychTid = await seedPsychTemplate(org.id);
-
-  await seedIqDemo(org.id, userByEmail, iqTid);
-  await seedEqDemo(org.id, userByEmail, eqTid);
-  await seedPsychInProgress(org.id, userByEmail, psychTid);
-  await seedManualActions(org.id, userByEmail, competencyBundles);
 
   await seedGlobalDemoTrainingContentTemplates();
 }

@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Circle, Target, ChevronDown, Clock, Lightbulb } from "lucide-react";
+import { CheckCircle2, Target, ChevronDown, Clock, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { completeMyUserAction, startMyUserAction } from "../actions/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { AISmartActionCard } from "@/components/ai/ai-action-card";
 import { cn } from "@/lib/utils";
 
 type Item = {
@@ -21,16 +22,20 @@ type Item = {
   status: string;
 };
 
+type SmartHint = { title: string; description: string; resource: string };
+
 export function CurrentActionsWidget({
   weekKey,
   items,
   completed,
   total,
+  aiSmartActions,
 }: {
   weekKey: string;
   items: Item[];
   completed: number;
   total: number;
+  aiSmartActions?: SmartHint[];
 }) {
   const [expanded, setExpanded] = useState(false);
   const active = items.filter((i) => i.status !== "DISMISSED" && i.status !== "COMPLETED");
@@ -83,6 +88,16 @@ export function CurrentActionsWidget({
             transition={{ duration: 0.2 }}
           >
             <CardContent className="border-t border-white/[0.06] pt-4">
+              {aiSmartActions && aiSmartActions.length > 0 && (
+                <div className="ai-aurora-bg mb-4 space-y-2 rounded-xl border border-cyan-500/20 p-3">
+                  <p className="text-caption-cerebral text-[10px] uppercase tracking-wider text-cyan-300/90">
+                    AI coaching ideas
+                  </p>
+                  {aiSmartActions.slice(0, 2).map((s, i) => (
+                    <AISmartActionCard key={`${s.title}-${i}`} action={s} index={i} />
+                  ))}
+                </div>
+              )}
               {active.length === 0 ? (
                 <div className="py-8 text-center">
                   <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-500/10">
@@ -130,7 +145,7 @@ function ActionItemRow({ item }: { item: Item }) {
         await startMyUserAction(item.id);
         setStatus(newStatus);
         toast.success("Marked as in progress");
-      } catch (e) {
+      } catch {
         toast.error("Failed to update");
       } finally {
         setIsSubmitting(false);
@@ -149,7 +164,7 @@ function ActionItemRow({ item }: { item: Item }) {
       setStatus("COMPLETED");
       toast.success("Action completed!");
       setShowComplete(false);
-    } catch (e) {
+    } catch {
       toast.error("Failed to complete");
     } finally {
       setIsSubmitting(false);

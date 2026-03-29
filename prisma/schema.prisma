@@ -45,6 +45,7 @@ model User {
   trainingAttempts        TrainingAttempt[]
   orgAssignmentsAssigned  OrgAssessmentAssignment[] @relation("OrgAssignmentAssignee")
   orgAssignmentsCreated   OrgAssessmentAssignment[] @relation("OrgAssignmentAssigner")
+  aiInsights              AIInsight[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -527,6 +528,35 @@ model AssessmentResult {
   computedAt       DateTime @default(now())
 
   assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+}
+
+/// Persisted AI + rule-based 360 insight (one row per completed assessment per user).
+model AIInsight {
+  id               String @id @default(cuid())
+  userId           String
+  assessmentId     String
+  assessmentType   String
+
+  aiGeneratedText  String? @db.Text
+  ruleBasedText    String? @db.Text
+  finalText        String  @db.Text
+
+  source           String
+  modelUsed        String?
+  generationTimeMs Int?
+  aiError          String?
+
+  /// Parsed smart actions: [{ title, description, resource }]
+  smartActionsJson Json?
+
+  userRating Int?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, assessmentId])
+  @@index([userId, assessmentId])
 }
 
 // --- 360 insight rules (tenant-configurable; optional global defaults) ---

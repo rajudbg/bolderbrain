@@ -6,6 +6,7 @@ import { CompetencyTrendsBlock } from "./_components/competency-trends";
 import { CurrentActionsWidget } from "./_components/current-actions-widget";
 import { DashboardEmpty } from "./_components/dashboard-empty";
 import { GapAnalysisChart } from "./_components/gap-analysis-chart";
+import { AIInsightCard } from "@/components/ai/ai-insight-card";
 import { InsightCards } from "./_components/insight-cards";
 import { RecentAssessmentsWidget } from "./_components/recent-assessments";
 import { EmployeeOnboarding } from "./_components/employee-onboarding";
@@ -50,6 +51,7 @@ export default async function EmployeeDashboardPage() {
           items={data.weeklyFocus.items}
           completed={data.weeklyFocus.completed}
           total={data.weeklyFocus.total}
+          aiSmartActions={data.aiSmartActions}
         />
         <RecommendationsWidget
           recommendations={allRecommendations}
@@ -107,6 +109,25 @@ export default async function EmployeeDashboardPage() {
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-6">
+            {data.aiInsight && (
+              <section className="space-y-4">
+                <div>
+                  <h2 className="ai-text-gradient text-xl font-semibold tracking-tight">Coach insight</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Personalized summary from your latest 360 (AI when available, rules as backup).
+                  </p>
+                </div>
+                <AIInsightCard
+                  id={data.aiInsight.id}
+                  finalText={data.aiInsight.finalText}
+                  source={data.aiInsight.source}
+                  initialRating={data.aiInsight.userRating}
+                  generationTimeMs={data.aiInsight.generationTimeMs}
+                  modelUsed={data.aiInsight.modelUsed}
+                />
+              </section>
+            )}
+
             {data.insights.length > 0 && (
               <section className="space-y-4">
                 <div>

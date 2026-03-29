@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookMarked, Building2, ClipboardList, HelpCircle, LayoutDashboard, Sparkles } from "lucide-react";
+import { Activity, BookMarked, Building2, ClipboardList, HelpCircle, LayoutDashboard, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "./sign-out-button";
 
 const links = [
   { href: "/super-admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/super-admin/ai-health", label: "AI health", icon: Activity },
   { href: "/super-admin/organizations", label: "Organizations", icon: Building2 },
   { href: "/super-admin/templates", label: "Assessment templates", icon: ClipboardList },
   { href: "/super-admin/templates/content/new", label: "Training content", icon: BookMarked },

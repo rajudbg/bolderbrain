@@ -4,8 +4,11 @@ import prisma from "../src/lib/prisma";
 
 async function main() {
   await seedDemoOrganization();
-  console.log("Demo seed complete: Acme Corp (slug acme-demo).");
-  console.log("Log in: demo@acme.com / demo123 (employee) or admin@acme.com / admin123 (admin).");
+  console.log("Demo seed complete: 4 tenants — acme-demo, beta-demo, gamma-demo, delta-demo.");
+  console.log("Passwords: employees demo123 · org admins admin123");
+  console.log(
+    "Examples: demo@acme.com · demo@beta-demo.com · demo@gamma-demo.com · demo@delta-demo.com (same pattern for admin@…)",
+  );
 }
 
 main()
