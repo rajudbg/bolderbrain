@@ -511,7 +511,7 @@ export function TnaDashboardClient(props: {
 
       {/* AI Recommendation Modal */}
       <Dialog open={aiModalOpen} onOpenChange={setAiModalOpen}>
-        <DialogContent className="max-w-2xl border-amber-500/20 bg-gradient-to-br from-[#0F0F11] to-[#1a1a1f]">
+        <DialogContent className="max-w-2xl border-amber-500/30 bg-[#141416] shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500">
