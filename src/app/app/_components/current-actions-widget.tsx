@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Target, ChevronDown, Clock, Lightbulb } from "lucide-react";
+import { CheckCircle2, Target, ChevronDown, Clock, Lightbulb, Play, CheckCircle, X } from "lucide-react";
 import { toast } from "sonner";
 import { completeMyUserAction, startMyUserAction } from "../actions/actions";
 import { Badge } from "@/components/ui/badge";
@@ -211,22 +211,34 @@ function ActionItemRow({ item }: { item: Item }) {
               <button
                 onClick={() => handleStatusChange("IN_PROGRESS")}
                 disabled={isSubmitting}
-                className="rounded bg-white/5 px-2 py-1 text-[10px] uppercase tracking-wider text-white/50 hover:bg-amber-500/10 hover:text-amber-400 transition-colors"
+                className="inline-flex items-center gap-1 rounded bg-white/5 px-2 py-1 text-[10px] uppercase tracking-wider text-white/50 hover:bg-amber-500/10 hover:text-amber-400 transition-colors"
               >
-                Mark In Progress
+                <Play className="size-3" />
+                Start
               </button>
             )}
             {isInProgress && (
-              <span className="text-[10px] uppercase tracking-wider text-amber-400">
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-amber-400">
+                <Clock className="size-3" />
                 In Progress
               </span>
             )}
             <button
               onClick={() => setShowComplete(!showComplete)}
               disabled={isSubmitting}
-              className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors"
+              className="inline-flex items-center gap-1 text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors"
             >
-              {showComplete ? "Cancel" : "Complete"}
+              {showComplete ? (
+                <>
+                  <X className="size-3" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="size-3" />
+                  Complete
+                </>
+              )}
             </button>
           </div>
 

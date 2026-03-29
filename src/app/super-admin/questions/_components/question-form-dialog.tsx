@@ -31,6 +31,7 @@ import { EQ_DOMAIN_KEYS } from "@/lib/eq-domains";
 import { OCEAN_TRAITS } from "@/lib/ocean-traits";
 import { parseForcedChoiceConfig, parseSemanticConfig } from "@/lib/psychometric-scoring";
 import { questionTypeLabel, questionTypesForTemplate } from "@/lib/assessment-question-types";
+import { getTemplateTypeLabel } from "@/lib/ui-labels";
 import { createQuestion, updateQuestion } from "../../actions";
 
 export type QuestionDTO = {
@@ -562,11 +563,19 @@ export function QuestionFormDialog({
                   <SelectValue placeholder="Select template" />
                 </SelectTrigger>
                 <SelectContent>
-                  {templates.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name} ({t.type.replace(/_/g, " ")})
-                    </SelectItem>
-                  ))}
+                  {templates.map((t) => {
+                    const typeConfig = getTemplateTypeLabel(t.type);
+                    const Icon = typeConfig.icon;
+                    return (
+                      <SelectItem key={t.id} value={t.id}>
+                        <span className="inline-flex items-center gap-2">
+                          <Icon className="size-4 text-white/60" />
+                          <span>{t.name}</span>
+                          <span className="text-white/40">({typeConfig.label})</span>
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>

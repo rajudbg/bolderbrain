@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/table";
 import type { GapSeverity, TrainingNeedSource, TrainingNeedStatus } from "@/generated/prisma/enums";
 import { bulkAssignNeedsToProgram, runAiRecommendProgram, runStrategicGapBrief, runTrendForecastBrief } from "./actions";
+import { StatusBadge, SourceBadge } from "@/components/ui/status-badge";
+import { getSourceLabel, getStatusConfig } from "@/lib/ui-labels";
 
 type NeedRow = {
   id: string;
@@ -264,26 +266,61 @@ export function TnaDashboardClient(props: {
           </div>
           <div className="flex flex-wrap gap-2">
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
-              <SelectTrigger className="w-[140px] border-white/15 bg-white/[0.04] text-white/85">
+              <SelectTrigger className="w-[160px] border-white/15 bg-white/[0.04] text-white/85">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="OPEN">Open</SelectItem>
-                <SelectItem value="ASSIGNED">Assigned</SelectItem>
-                <SelectItem value="IN_PROGRESS">In progress</SelectItem>
-                <SelectItem value="RESOLVED">Resolved</SelectItem>
+                <SelectItem value="OPEN">
+                  <span className="inline-flex items-center gap-2">
+                    {(() => { const C = getStatusConfig("OPEN").icon; return <C className="size-3.5 text-amber-400" />; })()}
+                    Open
+                  </span>
+                </SelectItem>
+                <SelectItem value="ASSIGNED">
+                  <span className="inline-flex items-center gap-2">
+                    {(() => { const C = getStatusConfig("ASSIGNED").icon; return <C className="size-3.5 text-blue-400" />; })()}
+                    Assigned
+                  </span>
+                </SelectItem>
+                <SelectItem value="IN_PROGRESS">
+                  <span className="inline-flex items-center gap-2">
+                    {(() => { const C = getStatusConfig("IN_PROGRESS").icon; return <C className="size-3.5 text-indigo-400" />; })()}
+                    In Progress
+                  </span>
+                </SelectItem>
+                <SelectItem value="RESOLVED">
+                  <span className="inline-flex items-center gap-2">
+                    {(() => { const C = getStatusConfig("RESOLVED").icon; return <C className="size-3.5 text-emerald-400" />; })()}
+                    Resolved
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
             <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v ?? "all")}>
-              <SelectTrigger className="w-[180px] border-white/15 bg-white/[0.04] text-white/85">
+              <SelectTrigger className="w-[200px] border-white/15 bg-white/[0.04] text-white/85">
                 <SelectValue placeholder="Source" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All sources</SelectItem>
-                <SelectItem value="TNA_ASSESSMENT">TNA assessment</SelectItem>
-                <SelectItem value="MANAGER_NOMINATION">Manager</SelectItem>
-                <SelectItem value="SELF_IDENTIFIED">Self-identified</SelectItem>
+                <SelectItem value="TNA_ASSESSMENT">
+                  <span className="inline-flex items-center gap-2">
+                    {(() => { const C = getSourceLabel("TNA_ASSESSMENT").icon; return <C className="size-3.5 text-purple-400" />; })()}
+                    TNA Assessment
+                  </span>
+                </SelectItem>
+                <SelectItem value="MANAGER_NOMINATION">
+                  <span className="inline-flex items-center gap-2">
+                    {(() => { const C = getSourceLabel("MANAGER_NOMINATION").icon; return <C className="size-3.5 text-amber-400" />; })()}
+                    Manager Nomination
+                  </span>
+                </SelectItem>
+                <SelectItem value="SELF_IDENTIFIED">
+                  <span className="inline-flex items-center gap-2">
+                    {(() => { const C = getSourceLabel("SELF_IDENTIFIED").icon; return <C className="size-3.5 text-cyan-400" />; })()}
+                    Self-Identified
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
             <Select value={compFilter} onValueChange={(v) => setCompFilter(v ?? "all")}>
@@ -361,11 +398,11 @@ export function TnaDashboardClient(props: {
                   </TableCell>
                   <TableCell className="font-medium text-white/85">{n.user.name ?? n.user.email}</TableCell>
                   <TableCell className="text-white/70">{n.competency.name}</TableCell>
-                  <TableCell className="text-white/55">{n.source.replace(/_/g, " ")}</TableCell>
+                  <TableCell className="text-white/55">
+                    <SourceBadge source={n.source} />
+                  </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="border-white/20 text-white/70">
-                      {n.status.replace(/_/g, " ")}
-                    </Badge>
+                    <StatusBadge status={n.status} />
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-white/80">{n.gap.toFixed(2)}</TableCell>
                   <TableCell className="text-white/55">{n.assignedProgram?.name ?? "—"}</TableCell>

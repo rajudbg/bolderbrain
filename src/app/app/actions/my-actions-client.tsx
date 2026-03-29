@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { completeMyUserAction, dismissMyUserAction, startMyUserAction } from "./actions";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge, DifficultyBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -31,12 +32,6 @@ type Row = {
 };
 
 type HistoryRow = Omit<Row, "competencyKey" | "assignedAt"> & { weekKey: string; assignedAt: string };
-
-function difficultyVariant(d: string): "default" | "secondary" | "outline" {
-  if (d === "HARD") return "default";
-  if (d === "MEDIUM") return "secondary";
-  return "outline";
-}
 
 export function MyActionsClient({
   weekKey,
@@ -126,7 +121,7 @@ export function MyActionsClient({
                 <CardHeader className="pb-2">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <Badge variant="secondary">{a.competencyName}</Badge>
-                    <Badge variant={difficultyVariant(a.difficulty)}>{a.difficulty}</Badge>
+                    <DifficultyBadge difficulty={a.difficulty} />
                   </div>
                   <CardTitle className="text-base leading-snug">{a.title}</CardTitle>
                   <CardDescription className="text-xs">
@@ -179,10 +174,10 @@ export function MyActionsClient({
                   <div>
                     <p className="font-medium">{h.title}</p>
                     <p className="text-muted-foreground text-xs">
-                      {h.competencyName} · {h.weekKey} · {h.status.replace(/_/g, " ")}
+                      {h.competencyName} · {h.weekKey} · <StatusBadge status={h.status} showIcon={false} />
                     </p>
                   </div>
-                  <Badge variant="outline">{h.status.replace(/_/g, " ")}</Badge>
+                  <Badge variant="outline"><StatusBadge status={h.status} showIcon={false} /></Badge>
                 </li>
               ))}
             </ul>
