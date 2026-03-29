@@ -3,9 +3,16 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { Sparkles, X, Loader2, Lightbulb, Target, Clock, BookOpen, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -25,6 +32,7 @@ import type { GapSeverity, TrainingNeedSource, TrainingNeedStatus } from "@/gene
 import { bulkAssignNeedsToProgram, runAiRecommendProgram, runStrategicGapBrief, runTrendForecastBrief } from "./actions";
 import { StatusBadge, SourceBadge } from "@/components/ui/status-badge";
 import { getSourceLabel, getStatusConfig } from "@/lib/ui-labels";
+import { cn } from "@/lib/utils";
 
 type NeedRow = {
   id: string;
@@ -90,6 +98,15 @@ export function TnaDashboardClient(props: {
   const [aiTrend, setAiTrend] = useState<string | null>(null);
   const [pendingAi, startAi] = useTransition();
   const [pendingBulk, startBulk] = useTransition();
+  
+  // AI Recommendation Modal State
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiRecommendation, setAiRecommendation] = useState<{
+    text: string;
+    competencyName: string;
+    gap: number;
+    isLoading: boolean;
+  } | null>(null);
 
   const userOrder = useMemo(() => {
     const ids = [...new Set(inventory.map((r) => r.userId))];
@@ -122,13 +139,32 @@ export function TnaDashboardClient(props: {
     });
   }
 
-  function toggleAllVisible() {
-    const ids = filteredNeeds.map((n) => n.id);
-    setSelected((prev) => {
-      const allOn = ids.length > 0 && ids.every((id) => prev.has(id));
-      if (allOn) return new Set();
-      return new Set(ids);
+  async function handleAiRecommend(competencyName: string, gap: number) {
+    setAiModalOpen(true);
+    setAiRecommendation({
+      text: "",
+      competencyName,
+      gap,
+      isLoading: true,
     });
+    
+    try {
+      const text = await runAiRecommendProgram({
+        competencyName,
+        gap,
+        roleHint: "employee",
+      });
+      setAiRecommendation({
+        text,
+        competencyName,
+        gap,
+        isLoading: false,
+      });
+    } catch (error) {
+      toast.error("Failed to get AI recommendation");
+      setAiModalOpen(false);
+      setAiRecommendation(null);
+    }
   }
 
   return (
@@ -411,17 +447,10 @@ export function TnaDashboardClient(props: {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="text-amber-400/90 hover:text-amber-300"
-                      onClick={() => {
-                        void runAiRecommendProgram({
-                          competencyName: n.competency.name,
-                          gap: n.gap,
-                          roleHint: "employee",
-                        }).then((text) => {
-                          toast.message("AI recommendation", { description: text.slice(0, 400) });
-                        });
-                      }}
+                      className="group relative overflow-hidden bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-amber-400/90 hover:from-amber-500/20 hover:to-orange-500/20 hover:text-amber-300 border border-amber-500/20 hover:border-amber-500/40 transition-all"
+                      onClick={() => handleAiRecommend(n.competency.name, n.gap)}
                     >
+                      <Sparkles className="mr-1.5 size-3.5" />
                       AI
                     </Button>
                   </TableCell>
@@ -479,6 +508,121 @@ export function TnaDashboardClient(props: {
         </div>
       </section>
       )}
+
+      {/* AI Recommendation Modal */}
+      <Dialog open={aiModalOpen} onOpenChange={setAiModalOpen}>
+        <DialogContent className="max-w-2xl border-amber-500/20 bg-gradient-to-br from-[#0F0F11] to-[#1a1a1f]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500">
+                <Sparkles className="size-4 text-white" />
+              </div>
+              <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+                AI Training Recommendation
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {aiRecommendation?.isLoading ? (
+            <div className="space-y-6 py-8">
+              <div className="flex flex-col items-center justify-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 animate-ping rounded-full bg-amber-500/20" />
+                  <div className="relative flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+                    <Loader2 className="size-8 animate-spin text-amber-400" />
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-medium text-white/90">Analyzing training needs...</p>
+                  <p className="mt-1 text-sm text-white/50">
+                    AI is evaluating {aiRecommendation.competencyName} gap ({aiRecommendation.gap.toFixed(2)})
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                <p className="text-xs uppercase tracking-wider text-white/40">Analysis Pipeline</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex size-6 items-center justify-center rounded-full bg-emerald-500/20">
+                    <Target className="size-3 text-emerald-400" />
+                  </div>
+                  <span className="text-sm text-white/70">Gap severity assessment</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex size-6 items-center justify-center rounded-full bg-emerald-500/20">
+                    <BookOpen className="size-3 text-emerald-400" />
+                  </div>
+                  <span className="text-sm text-white/70">Competency mapping</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex size-6 items-center justify-center rounded-full bg-amber-500/20 animate-pulse">
+                    <Lightbulb className="size-3 text-amber-400" />
+                  </div>
+                  <span className="text-sm text-white/70">Generating personalized recommendations...</span>
+                </div>
+              </div>
+            </div>
+          ) : aiRecommendation ? (
+            <div className="space-y-4 py-2">
+              {/* Header Info */}
+              <div className="flex items-start gap-4 rounded-xl border border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-4">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/20">
+                  <Target className="size-6 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-white/50">Competency</p>
+                  <p className="text-lg font-semibold text-white/90">{aiRecommendation.competencyName}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-sm text-white/50">Gap:</span>
+                    <span className={cn(
+                      "text-sm font-medium",
+                      aiRecommendation.gap > 1.5 ? "text-red-400" :
+                      aiRecommendation.gap > 0.5 ? "text-amber-400" : "text-emerald-400"
+                    )}>
+                      {aiRecommendation.gap.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Recommendation Content */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="size-4 text-amber-400" />
+                  <p className="text-sm font-medium text-white/80">AI Recommendation</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/80">
+                    {aiRecommendation.text}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAiModalOpen(false)}
+                  className="text-white/60 hover:text-white/90"
+                >
+                  Close
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:opacity-90"
+                  onClick={() => {
+                    navigator.clipboard.writeText(aiRecommendation.text);
+                    toast.success("Copied to clipboard");
+                  }}
+                >
+                  Copy Recommendation
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
