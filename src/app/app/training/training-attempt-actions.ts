@@ -12,7 +12,11 @@ import {
   trainingScoreToSnapshot,
   type QuestionForScoring,
 } from "@/lib/scoring/training-knowledge-engine";
-import { computeTrainingDelta, type TrainingCompetencyScores } from "@/lib/training-impact";
+import {
+  markTrainingNeedsInProgressForEnrollment,
+  resolveTrainingNeedsAfterPostAssessment,
+} from "@/lib/training-enrollment-sync";
+import { computeTrainingDelta, type TrainingCompetencyScores, type TrainingDeltaPayload } from "@/lib/training-impact";
 import { isKnowledgeKind, timerMinutesForAttempt } from "@/lib/training-content-attempts";
 
 export type AttemptResponseVal = { selectedOptionIds?: string[]; numericValue?: number };
@@ -219,6 +223,9 @@ export async function submitTrainingAttempt(
     responses,
   );
 
+  const enrollmentId = attempt.trainingEnrollmentId;
+  let deltaPayload: TrainingDeltaPayload | null = null;
+
   const now = new Date();
   await prisma.$transaction(async (tx) => {
     await tx.trainingAttempt.update({
@@ -235,7 +242,7 @@ export async function submitTrainingAttempt(
 
     if (attempt.phase === TrainingAttemptPhase.PRE) {
       await tx.trainingEnrollment.update({
-        where: { id: attempt.trainingEnrollmentId },
+        where: { id: enrollmentId },
         data: {
           preScores: scores as object,
           status: EnrollmentStatus.PRE_COMPLETED,
@@ -243,9 +250,9 @@ export async function submitTrainingAttempt(
       });
     } else {
       const pre = parseScores(attempt.trainingEnrollment.preScores);
-      const deltaPayload = computeTrainingDelta(pre, scores);
+      deltaPayload = computeTrainingDelta(pre, scores);
       await tx.trainingEnrollment.update({
-        where: { id: attempt.trainingEnrollmentId },
+        where: { id: enrollmentId },
         data: {
           postScores: scores as object,
           delta: deltaPayload ? (deltaPayload as object) : undefined,
@@ -255,4 +262,10 @@ export async function submitTrainingAttempt(
       });
     }
   });
+
+  if (attempt.phase === TrainingAttemptPhase.PRE) {
+    await markTrainingNeedsInProgressForEnrollment(enrollmentId);
+  } else if (deltaPayload) {
+    await resolveTrainingNeedsAfterPostAssessment(enrollmentId, deltaPayload);
+  }
 }

@@ -4,8 +4,10 @@ import {
   listAssessmentsForOrg,
   listBehavioralTemplatesForOrg,
   listOrgMembersForPicker,
+  listTnaTemplatesForOrg,
 } from "./actions";
 import { CreateAssessmentSection } from "./_components/create-assessment-section";
+import { CreateTnaSection } from "./_components/create-tna-section";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -38,22 +40,27 @@ function statusBadge(s: EvaluatorStatus) {
 export default async function OrgAssessmentsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   await requireOrgAdmin(slug);
-  const [rows, templates, members] = await Promise.all([
+  const [rows, templates, tnaTemplates, members] = await Promise.all([
     listAssessmentsForOrg(slug),
     listBehavioralTemplatesForOrg(slug),
+    listTnaTemplatesForOrg(slug),
     listOrgMembersForPicker(slug),
   ]);
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">360 behavioral assessments</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Behavioral &amp; TNA assessments</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Create a run from a BEHAVIORAL_360 template, assign raters, then open results when everyone has submitted.
+          Launch 360 feedback (multi-rater) or a TNA diagnostic (self skills audit). Results open when submissions are
+          complete.
         </p>
       </div>
 
-      <CreateAssessmentSection slug={slug} templates={templates} members={members} />
+      <div className="grid gap-8 lg:grid-cols-2">
+        <CreateAssessmentSection slug={slug} templates={templates} members={members} />
+        <CreateTnaSection slug={slug} templates={tnaTemplates} members={members} />
+      </div>
 
       <div className="space-y-3">
         <h2 className="text-lg font-medium">Active &amp; recent</h2>
@@ -65,6 +72,7 @@ export default async function OrgAssessmentsPage({ params }: { params: Promise<{
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Subject</TableHead>
                   <TableHead>Raters</TableHead>
                   <TableHead>Result</TableHead>
@@ -75,6 +83,11 @@ export default async function OrgAssessmentsPage({ params }: { params: Promise<{
                 {rows.map((a) => (
                   <TableRow key={a.id}>
                     <TableCell className="font-medium">{a.title ?? a.template.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-normal">
+                        {a.template.type.replace(/_/g, " ")}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{a.subject.name ?? a.subject.email}</TableCell>
                     <TableCell className="text-muted-foreground max-w-[280px] text-xs">
                       {a.evaluators.map((e) => (

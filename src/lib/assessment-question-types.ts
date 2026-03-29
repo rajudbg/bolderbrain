@@ -4,6 +4,13 @@ import {
 } from "@/generated/prisma/enums";
 
 /** Question types allowed for each assessment template type in admin configuration. */
+/** Likert-based flow shared by 360 feedback and TNA diagnostic self-audits. */
+export function usesLikert360Flow(type: AssessmentTemplateType): boolean {
+  return (
+    type === AssessmentTemplateType.BEHAVIORAL_360 || type === AssessmentTemplateType.TNA_DIAGNOSTIC
+  );
+}
+
 export function questionTypesForTemplate(type: AssessmentTemplateType): AssessmentQuestionType[] {
   switch (type) {
     case AssessmentTemplateType.BEHAVIORAL_360:
@@ -18,6 +25,8 @@ export function questionTypesForTemplate(type: AssessmentTemplateType): Assessme
         AssessmentQuestionType.SPATIAL_REASONING,
         AssessmentQuestionType.TEXT_SHORT,
       ];
+    case AssessmentTemplateType.TNA_DIAGNOSTIC:
+      return [AssessmentQuestionType.LIKERT_360, AssessmentQuestionType.TEXT_SHORT, AssessmentQuestionType.FREE_TEXT];
     case AssessmentTemplateType.EQ_ASSESSMENT:
       return [
         AssessmentQuestionType.EQ_SCENARIO,

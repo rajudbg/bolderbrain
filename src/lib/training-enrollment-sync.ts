@@ -1,10 +1,11 @@
-import { EnrollmentStatus } from "@/generated/prisma/enums";
+import { EnrollmentStatus, TrainingNeedStatus } from "@/generated/prisma/enums";
 import type { Assessment360StoredResult } from "@/lib/assessment-360-result";
 import prisma from "@/lib/prisma";
 import {
   computeTrainingDelta,
   scoresFrom360Payload,
   type TrainingCompetencyScores,
+  type TrainingDeltaPayload,
 } from "@/lib/training-impact";
 
 function parseScores(json: unknown): TrainingCompetencyScores | null {
@@ -41,6 +42,7 @@ export async function onAssessment360FinalizedForTraining(assessmentId: string):
         status: EnrollmentStatus.PRE_COMPLETED,
       },
     });
+    await markTrainingNeedsInProgressForEnrollment(enrollment.id);
     return;
   }
 
@@ -56,5 +58,77 @@ export async function onAssessment360FinalizedForTraining(assessmentId: string):
         completedAt: new Date(),
       },
     });
+    if (deltaPayload) {
+      await resolveTrainingNeedsAfterPostAssessment(enrollment.id, deltaPayload);
+    }
   }
+}
+
+/**
+ * When a learner completes pre-training (path started), move linked needs from ASSIGNED → IN_PROGRESS.
+ */
+export async function markTrainingNeedsInProgressForEnrollment(enrollmentId: string): Promise<void> {
+  const enrollment = await prisma.trainingEnrollment.findUnique({
+    where: { id: enrollmentId },
+    include: { trainingProgram: { select: { organizationId: true, id: true } } },
+  });
+  if (!enrollment) return;
+
+  await prisma.trainingNeed.updateMany({
+    where: {
+      organizationId: enrollment.trainingProgram.organizationId,
+      userId: enrollment.userId,
+      assignedProgramId: enrollment.trainingProgram.id,
+      status: TrainingNeedStatus.ASSIGNED,
+    },
+    data: { status: TrainingNeedStatus.IN_PROGRESS },
+  });
+}
+
+/**
+ * Close the loop: linked training needs move to RESOLVED when post-assessment shows overall improvement.
+ */
+export async function resolveTrainingNeedsAfterPostAssessment(
+  enrollmentId: string,
+  deltaPayload: TrainingDeltaPayload,
+): Promise<void> {
+  const enrollment = await prisma.trainingEnrollment.findUnique({
+    where: { id: enrollmentId },
+    include: { trainingProgram: { select: { id: true, organizationId: true } } },
+  });
+  if (!enrollment) return;
+
+  const overallDelta = deltaPayload.overall.delta;
+  if (typeof overallDelta !== "number") return;
+
+  const orgId = enrollment.trainingProgram.organizationId;
+  const programId = enrollment.trainingProgram.id;
+
+  if (overallDelta > 0.5) {
+    await prisma.trainingNeed.updateMany({
+      where: {
+        organizationId: orgId,
+        userId: enrollment.userId,
+        assignedProgramId: programId,
+        status: { in: [TrainingNeedStatus.ASSIGNED, TrainingNeedStatus.IN_PROGRESS] },
+      },
+      data: {
+        status: TrainingNeedStatus.RESOLVED,
+        resolvedAt: new Date(),
+      },
+    });
+    return;
+  }
+
+  await prisma.trainingNeed.updateMany({
+    where: {
+      organizationId: orgId,
+      userId: enrollment.userId,
+      assignedProgramId: programId,
+      status: { in: [TrainingNeedStatus.ASSIGNED, TrainingNeedStatus.IN_PROGRESS] },
+    },
+    data: {
+      notes: `Post-training: overall delta ${overallDelta.toFixed(2)} (≤0.5) — review for follow-up or advanced training.`,
+    },
+  });
 }

@@ -17,6 +17,7 @@ import {
   MoreHorizontal,
   GraduationCap,
   Users,
+  Flame,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ const nav = [
   { href: "/app/manager", label: "My team", icon: Users },
   { href: "/app/actions", label: "My actions", icon: Target },
   { href: "/app/training", label: "My learning", icon: GraduationCap },
+  { href: "/app/development", label: "Development", icon: Flame },
   { href: "/assessments", label: "My assessments", icon: ClipboardList },
   { href: "/app/assessments/iq", label: "Cognitive (IQ)", icon: Brain },
   { href: "/app/assessments/eq", label: "EQ", icon: Heart },
@@ -55,6 +57,9 @@ function navActive(pathname: string, href: string): boolean {
   }
   if (href === "/app/training") {
     return pathname === "/app/training" || pathname.startsWith("/app/training/");
+  }
+  if (href === "/app/development") {
+    return pathname === "/app/development" || pathname.startsWith("/app/development/");
   }
   if (href === "/app/assessments/iq") {
     return pathname === "/app/assessments/iq" || pathname.startsWith("/app/assessments/iq/");

@@ -46,6 +46,8 @@ model User {
   orgAssignmentsAssigned  OrgAssessmentAssignment[] @relation("OrgAssignmentAssignee")
   orgAssignmentsCreated   OrgAssessmentAssignment[] @relation("OrgAssignmentAssigner")
   aiInsights              AIInsight[]
+  trainingNeeds           TrainingNeed[]
+  skillsInventoryRows     SkillsInventory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -111,6 +113,9 @@ model Organization {
   trainingPrograms           TrainingProgram[]
   trainingContentTemplates   TrainingContentTemplate[]
   orgAssessmentAssignments   OrgAssessmentAssignment[]
+  competencyTargets          CompetencyTarget[]
+  trainingNeeds              TrainingNeed[]
+  skillsInventoryRows        SkillsInventory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -142,6 +147,8 @@ enum AssessmentTemplateType {
   IQ_COGNITIVE
   EQ_ASSESSMENT
   PSYCHOMETRIC
+  /// Self-report skills audit; compared to CompetencyTarget to open TrainingNeeds.
+  TNA_DIAGNOSTIC
 }
 
 enum ScoringStrategy {
@@ -473,6 +480,7 @@ model Assessment {
   evaluators AssessmentEvaluator[]
   result     AssessmentResult?
   competencySnapshots CompetencyScoreSnapshot[]
+  trainingNeedsAsSource TrainingNeed[] @relation("TrainingNeedSourceAssessment")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -621,6 +629,9 @@ model Competency {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   actions      Action[]
+  competencyTargets CompetencyTarget[]
+  trainingNeeds     TrainingNeed[]
+  skillsInventoryRows SkillsInventory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -871,12 +882,122 @@ model TrainingProgram {
   trainingContentTemplate TrainingContentTemplate? @relation(fields: [trainingContentTemplateId], references: [id], onDelete: Restrict)
   enrollments  TrainingEnrollment[]
   attempts     TrainingAttempt[]
+  trainingNeeds TrainingNeed[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
   @@index([status])
+}
+
+// --- Training Needs Analysis (TNA / TNI) ---
+
+enum CompetencyCriticality {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+/// Expected proficiency by org competency; optional department / level scoping.
+model CompetencyTarget {
+  id             String @id @default(cuid())
+  organizationId String
+  competencyId   String
+  /// Null = all departments.
+  department     String?
+  /// Null = all levels (e.g. IC, M1).
+  careerLevel    String?
+  targetScore    Float
+  minimumScore   Float
+  criticality    CompetencyCriticality @default(MEDIUM)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  competency   Competency   @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([competencyId])
+}
+
+enum TrainingNeedSource {
+  TNA_ASSESSMENT
+  MANAGER_NOMINATION
+  SELF_IDENTIFIED
+}
+
+enum TrainingNeedStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum GapSeverity {
+  EXCEEDS
+  MET
+  HIGH
+  CRITICAL
+}
+
+model TrainingNeed {
+  id               String @id @default(cuid())
+  organizationId String
+  userId           String
+  competencyId   String
+  /// Observed score when need was created (e.g. self / others avg).
+  currentScore   Float?
+  targetScore    Float
+  /// Positive = below target (development need).
+  gap            Float
+  priority       Int                @default(0)
+  source         TrainingNeedSource
+  status         TrainingNeedStatus @default(OPEN)
+  assignedProgramId String?
+  /// Assessment that identified the gap (TNA or 360).
+  sourceAssessmentId String?
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competency   Competency      @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  assignedProgram TrainingProgram? @relation(fields: [assignedProgramId], references: [id], onDelete: SetNull)
+  sourceAssessment Assessment? @relation("TrainingNeedSourceAssessment", fields: [sourceAssessmentId], references: [id], onDelete: SetNull)
+
+  notes      String?   @db.Text
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([userId, status])
+  @@index([competencyId])
+  @@index([priority])
+}
+
+/// Latest aggregated gap row per user × competency (heatmap / inventory).
+model SkillsInventory {
+  id             String @id @default(cuid())
+  organizationId String
+  userId         String
+  competencyId   String
+  currentScore   Float
+  targetScore    Float
+  gap            Float
+  severity       GapSeverity
+  gapCountHint   Int       @default(0)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competency   Competency   @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, organizationId, competencyId])
+  @@index([organizationId])
 }
 
 model TrainingEnrollment {

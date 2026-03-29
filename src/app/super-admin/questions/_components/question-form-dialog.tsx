@@ -85,7 +85,10 @@ function needsTraitCategory(templateType: AssessmentTemplateType): boolean {
 }
 
 function needsCompetencyFor360(templateType: AssessmentTemplateType): boolean {
-  return templateType === AssessmentTemplateType.BEHAVIORAL_360;
+  return (
+    templateType === AssessmentTemplateType.BEHAVIORAL_360 ||
+    templateType === AssessmentTemplateType.TNA_DIAGNOSTIC
+  );
 }
 
 function needsCorrectAnswer(templateType: AssessmentTemplateType, qt: AssessmentQuestionType): boolean {

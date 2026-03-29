@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrgMember } from "@/lib/org-auth";
-import { getAssessment360Results } from "../../actions";
+import { getOrgAssessmentResults } from "../../actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -19,7 +19,7 @@ export default async function AssessmentResultsPage({
 }) {
   const { slug, assessmentId } = await params;
   await requireOrgMember(slug);
-  const data = await getAssessment360Results(slug, assessmentId);
+  const data = await getOrgAssessmentResults(slug, assessmentId);
   if (!data) notFound();
 
   if (data.kind === "pending") {
@@ -36,6 +36,60 @@ export default async function AssessmentResultsPage({
           Scores are calculated after every assigned rater has submitted. {data.title} — subject:{" "}
           {data.subjectName ?? "—"}.
         </p>
+      </div>
+    );
+  }
+
+  if (data.kind === "tna") {
+    return (
+      <div className="space-y-8">
+        <div>
+          <Link
+            href={`/org/${slug}/assessments/${assessmentId}`}
+            className="text-muted-foreground text-sm hover:text-foreground"
+          >
+            ← Back to assessment
+          </Link>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">TNA diagnostic results</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {data.title} · Subject: {data.subjectName ?? "—"} · Computed {data.computedAt.toLocaleString()}
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Overall</CardTitle>
+            <CardDescription>Trait aggregate across competencies (self-report).</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold tabular-nums">{data.scores.overall.toFixed(2)}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Competency scores</CardTitle>
+            <CardDescription>Compared to targets in the gap analysis dashboard (training needs may have been generated).</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Competency</TableHead>
+                  <TableHead className="text-right">Score</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.scores.byCompetency.map((row) => (
+                  <TableRow key={row.competencyKey}>
+                    <TableCell className="font-medium">{row.competencyKey}</TableCell>
+                    <TableCell className="text-right tabular-nums">{row.score.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     );
   }

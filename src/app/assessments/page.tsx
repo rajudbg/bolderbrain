@@ -25,14 +25,14 @@ export default async function MyAssessmentsPage() {
             <h1 className="font-heading text-3xl font-semibold tracking-tight text-white/90">My assessments</h1>
             <p className="mt-1 text-sm text-white/55">Open a task to continue or submit your feedback.</p>
           </div>
-          <Link href="/" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            Home
+          <Link href="/app/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            Dashboard
           </Link>
         </div>
 
         {asSubject.length > 0 && (
           <div className="mb-10 space-y-3">
-            <h2 className="font-heading text-lg font-medium text-white/85">360 reviews about you</h2>
+            <h2 className="font-heading text-lg font-medium text-white/85">Assessments about you</h2>
             <ul className="space-y-2">
               {asSubject.map((a) => (
                 <li

@@ -56,6 +56,7 @@ type OrgOption = { id: string; name: string; slug: string };
 
 const TEMPLATE_TYPES: AssessmentTemplateType[] = [
   AssessmentTemplateType.BEHAVIORAL_360,
+  AssessmentTemplateType.TNA_DIAGNOSTIC,
   AssessmentTemplateType.IQ_COGNITIVE,
   AssessmentTemplateType.EQ_ASSESSMENT,
   AssessmentTemplateType.PSYCHOMETRIC,

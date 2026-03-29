@@ -12,6 +12,7 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "seed:demo": "tsx prisma/seed-demo.ts",
+    "seed:realistic": "tsx prisma/seed-realistic.ts",
     "seed:training-content-demo": "tsx prisma/seed-training-content-demo.ts"
   },
   "prisma": {

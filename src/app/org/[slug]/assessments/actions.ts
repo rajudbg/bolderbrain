@@ -13,6 +13,8 @@ import { auth } from "@/auth";
 import type { Assessment360StoredResult } from "@/lib/assessment-360-result";
 import { requireOrgAdmin, requireOrgMember } from "@/lib/org-auth";
 import { tryFinalizeAssessmentResult } from "@/lib/assessment-360-result";
+import { tryFinalizeTnaAssessmentResult } from "@/lib/tna/tna-assessment-result";
+import type { TnaStoredResult } from "@/lib/tna/tna-assessment-result";
 import { z } from "zod";
 
 export async function listBehavioralTemplatesForOrg(slug: string) {
@@ -21,6 +23,19 @@ export async function listBehavioralTemplatesForOrg(slug: string) {
     where: {
       organizationId: tenant.organizationId,
       type: AssessmentTemplateType.BEHAVIORAL_360,
+      isActive: true,
+    },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    select: { id: true, key: true, name: true, description: true },
+  });
+}
+
+export async function listTnaTemplatesForOrg(slug: string) {
+  const { tenant } = await requireOrgAdmin(slug);
+  return prisma.assessmentTemplate.findMany({
+    where: {
+      organizationId: tenant.organizationId,
+      type: AssessmentTemplateType.TNA_DIAGNOSTIC,
       isActive: true,
     },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -44,7 +59,7 @@ export async function listAssessmentsForOrg(slug: string) {
   return prisma.assessment.findMany({
     where: { organizationId: tenant.organizationId },
     include: {
-      template: { select: { name: true, key: true } },
+      template: { select: { name: true, key: true, type: true } },
       subject: { select: { id: true, name: true, email: true } },
       evaluators: {
         include: { user: { select: { id: true, name: true, email: true } } },
@@ -126,6 +141,76 @@ export async function createAssessment360(input: z.infer<typeof createSchema>) {
                 },
               ]
             : []),
+        ],
+      },
+    },
+    include: {
+      evaluators: { include: { user: true } },
+      organization: true,
+    },
+  });
+
+  for (const ev of assessment.evaluators) {
+    await notifyEvaluatorAssigned({
+      to: ev.user.email,
+      recipientName: ev.user.name,
+      assessmentTitle: assessment.title ?? template.name,
+      organizationName: assessment.organization.name,
+      evaluatorId: ev.id,
+    });
+  }
+
+  revalidatePath(`/org/${data.slug}/assessments`);
+  return assessment.id;
+}
+
+const createTnaSchema = z.object({
+  slug: z.string().min(1),
+  templateId: z.string().min(1),
+  subjectUserId: z.string().min(1),
+  title: z.string().min(1).max(200),
+});
+
+export async function createAssessmentTna(input: z.infer<typeof createTnaSchema>) {
+  const data = createTnaSchema.parse(input);
+  const { session, tenant } = await requireOrgAdmin(data.slug);
+
+  const template = await prisma.assessmentTemplate.findFirst({
+    where: {
+      id: data.templateId,
+      organizationId: tenant.organizationId,
+      type: AssessmentTemplateType.TNA_DIAGNOSTIC,
+      isActive: true,
+    },
+  });
+  if (!template) {
+    throw new Error("Template not found or not a TNA diagnostic template");
+  }
+
+  const memberIds = new Set(
+    (
+      await prisma.organizationMember.findMany({
+        where: { organizationId: tenant.organizationId },
+        select: { userId: true },
+      })
+    ).map((m) => m.userId),
+  );
+
+  if (!memberIds.has(data.subjectUserId)) {
+    throw new Error("Subject must belong to the organization");
+  }
+
+  const assessment = await prisma.assessment.create({
+    data: {
+      organizationId: tenant.organizationId,
+      templateId: template.id,
+      subjectUserId: data.subjectUserId,
+      title: data.title.trim(),
+      status: AssessmentInstanceStatus.ACTIVE,
+      createdByUserId: session.user.id,
+      evaluators: {
+        create: [
+          { userId: data.subjectUserId, role: EvaluatorRole.SELF, status: EvaluatorStatus.PENDING },
         ],
       },
     },
@@ -238,19 +323,28 @@ export async function triggerScoreRecheck(slug: string, assessmentId: string) {
   });
   if (!ok) throw new Error("Not found");
   await tryFinalizeAssessmentResult(assessmentId);
+  await tryFinalizeTnaAssessmentResult(assessmentId);
   revalidatePath(`/org/${slug}/assessments`);
   revalidatePath(`/org/${slug}/assessments/${assessmentId}`);
   revalidatePath(`/org/${slug}/assessments/${assessmentId}/results`);
 }
 
-export type Assessment360ResultsView =
+export type OrgAssessmentResultsView =
   | {
-      kind: "ready";
+      kind: "360";
       assessmentId: string;
       title: string;
       subjectName: string | null;
       computedAt: Date;
       scores: Assessment360StoredResult;
+    }
+  | {
+      kind: "tna";
+      assessmentId: string;
+      title: string;
+      subjectName: string | null;
+      computedAt: Date;
+      scores: TnaStoredResult;
     }
   | {
       kind: "pending";
@@ -259,7 +353,10 @@ export type Assessment360ResultsView =
       subjectName: string | null;
     };
 
-export async function getAssessment360Results(slug: string, assessmentId: string): Promise<Assessment360ResultsView | null> {
+export async function getOrgAssessmentResults(
+  slug: string,
+  assessmentId: string,
+): Promise<OrgAssessmentResultsView | null> {
   const session = await auth();
   if (!session?.user?.id) return null;
   const { tenant } = await requireOrgMember(slug);
@@ -269,7 +366,7 @@ export async function getAssessment360Results(slug: string, assessmentId: string
     include: {
       result: true,
       subject: { select: { id: true, name: true } },
-      template: { select: { name: true } },
+      template: { select: { name: true, type: true } },
     },
   });
   if (!a) return null;
@@ -290,12 +387,27 @@ export async function getAssessment360Results(slug: string, assessmentId: string
     };
   }
 
-  return {
-    kind: "ready",
-    assessmentId: a.id,
-    title,
-    subjectName,
-    computedAt: a.result.computedAt,
-    scores: a.result.competencyScores as unknown as Assessment360StoredResult,
-  };
+  if (a.template.type === AssessmentTemplateType.TNA_DIAGNOSTIC) {
+    return {
+      kind: "tna",
+      assessmentId: a.id,
+      title,
+      subjectName,
+      computedAt: a.result.computedAt,
+      scores: a.result.competencyScores as unknown as TnaStoredResult,
+    };
+  }
+
+  if (a.template.type === AssessmentTemplateType.BEHAVIORAL_360) {
+    return {
+      kind: "360",
+      assessmentId: a.id,
+      title,
+      subjectName,
+      computedAt: a.result.computedAt,
+      scores: a.result.competencyScores as unknown as Assessment360StoredResult,
+    };
+  }
+
+  return null;
 }

@@ -8,6 +8,8 @@ import {
 } from "@/generated/prisma/enums";
 import prisma from "@/lib/prisma";
 import { tryFinalizeAssessmentResult } from "@/lib/assessment-360-result";
+import { tryFinalizeTnaAssessmentResult } from "@/lib/tna/tna-assessment-result";
+import { usesLikert360Flow } from "@/lib/assessment-question-types";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -18,7 +20,7 @@ export async function listAssessmentsWhereIamSubject() {
   return prisma.assessment.findMany({
     where: {
       subjectUserId: session.user.id,
-      template: { type: AssessmentTemplateType.BEHAVIORAL_360 },
+      template: { type: { in: [AssessmentTemplateType.BEHAVIORAL_360, AssessmentTemplateType.TNA_DIAGNOSTIC] } },
     },
     include: {
       organization: { select: { slug: true, name: true } },
@@ -36,7 +38,9 @@ export async function listMyEvaluatorAssignments() {
   return prisma.assessmentEvaluator.findMany({
     where: {
       userId: session.user.id,
-      assessment: { template: { type: AssessmentTemplateType.BEHAVIORAL_360 } },
+      assessment: {
+        template: { type: { in: [AssessmentTemplateType.BEHAVIORAL_360, AssessmentTemplateType.TNA_DIAGNOSTIC] } },
+      },
     },
     include: {
       assessment: {
@@ -98,7 +102,7 @@ export async function getTakingPayload(evaluatorId: string): Promise<TakingPaylo
     },
   });
 
-  if (!ev || ev.assessment.template.type !== AssessmentTemplateType.BEHAVIORAL_360) {
+  if (!ev || !usesLikert360Flow(ev.assessment.template.type)) {
     return null;
   }
 
@@ -262,6 +266,7 @@ export async function submitEvaluator(evaluatorId: string) {
   });
 
   await tryFinalizeAssessmentResult(ev.assessmentId);
+  await tryFinalizeTnaAssessmentResult(ev.assessmentId);
 
   const slug = ev.assessment.organization.slug;
   revalidatePath(`/assessments/${ev.id}`);

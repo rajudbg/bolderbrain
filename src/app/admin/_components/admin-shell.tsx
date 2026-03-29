@@ -16,6 +16,9 @@ import {
   Presentation,
   Target,
   Users,
+  Flame,
+  Grid3x3,
+  CircleUser,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,6 +32,8 @@ const nav = [
   { href: "/admin/assessment-programs", label: "Programs", icon: LayoutGrid },
   { href: "/admin/competencies", label: "Competencies", icon: BarChart3 },
   { href: "/admin/training", label: "Training Impact", icon: GraduationCap },
+  { href: "/admin/tna", label: "TNA", icon: Flame },
+  { href: "/admin/team/development", label: "Team dev", icon: Grid3x3 },
   /** EQ is taken in the employee app; link here so admins can open it without hunting. */
   { href: "/app/assessments/eq", label: "EQ", icon: Heart },
   { href: "/admin/feedback-360", label: "360 feedback", icon: Users },
@@ -37,6 +42,7 @@ const nav = [
   { href: "/admin/people", label: "People", icon: Building2 },
   { href: "/admin/action-center", label: "Action center", icon: Target },
   { href: "/admin/reports", label: "Reports", icon: Download },
+  { href: "/admin/profile", label: "Profile", icon: CircleUser },
 ];
 
 export function AdminShell({

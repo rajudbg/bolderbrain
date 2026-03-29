@@ -12,6 +12,7 @@ export function defaultScoringStrategyForTemplateType(type: AssessmentTemplateTy
       return ScoringStrategy.SUM_CORRECT;
     case AssessmentTemplateType.EQ_ASSESSMENT:
     case AssessmentTemplateType.PSYCHOMETRIC:
+    case AssessmentTemplateType.TNA_DIAGNOSTIC:
       return ScoringStrategy.TRAIT_AGGREGATE;
     default:
       return ScoringStrategy.MULTI_SOURCE;

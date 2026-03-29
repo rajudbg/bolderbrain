@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
+import { testAiConnectionEmployee } from "@/app/actions/ai-connection";
+import { AiConnectionTestCard } from "@/components/profile/ai-connection-test";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -41,6 +43,8 @@ export default async function ProfilePage() {
           </p>
         </CardContent>
       </Card>
+
+      <AiConnectionTestCard variant="employee" testAction={testAiConnectionEmployee} />
 
       <Card className="border-border/60 shadow-sm">
         <CardHeader>

@@ -9,6 +9,7 @@ import {
   EvaluatorRole,
   EvaluatorStatus,
   IqAttemptStatus,
+  CompetencyCriticality,
   OrganizationRole,
   PsychAttemptStatus,
   ScoringStrategy,
@@ -243,6 +244,70 @@ async function seedCompetenciesAndActions(orgId: string, orgDisplayName: string)
     out.push({ competencyId: comp.id, actionIds });
   }
   return out;
+}
+
+/** Default + department-scoped proficiency bars for TNA / gap analysis demos. */
+async function seedCompetencyTargets(orgId: string) {
+  const comps = await prisma.competency.findMany({
+    where: { organizationId: orgId },
+    select: { id: true, key: true },
+  });
+  const byKey = (k: string) => comps.find((c) => c.key === k);
+
+  async function ensureTarget(
+    competencyId: string,
+    department: string | null,
+    targetScore: number,
+    minimumScore: number,
+    criticality: CompetencyCriticality,
+  ) {
+    const existing = await prisma.competencyTarget.findFirst({
+      where: {
+        organizationId: orgId,
+        competencyId,
+        department,
+        careerLevel: null,
+      },
+    });
+    if (existing) {
+      await prisma.competencyTarget.update({
+        where: { id: existing.id },
+        data: { targetScore, minimumScore, criticality },
+      });
+    } else {
+      await prisma.competencyTarget.create({
+        data: {
+          organizationId: orgId,
+          competencyId,
+          department,
+          careerLevel: null,
+          targetScore,
+          minimumScore,
+          criticality,
+        },
+      });
+    }
+  }
+
+  const comm = byKey("communication");
+  const lead = byKey("leadership");
+  const collab = byKey("collaboration");
+
+  if (comm) await ensureTarget(comm.id, null, 4.0, 3.0, CompetencyCriticality.MEDIUM);
+  if (lead) await ensureTarget(lead.id, null, 4.0, 3.0, CompetencyCriticality.MEDIUM);
+  if (collab) await ensureTarget(collab.id, null, 4.0, 3.0, CompetencyCriticality.MEDIUM);
+
+  if (comm) {
+    await ensureTarget(comm.id, "Engineering", 4.2, 3.2, CompetencyCriticality.HIGH);
+    await ensureTarget(comm.id, "Sales", 4.5, 3.5, CompetencyCriticality.HIGH);
+  }
+  if (lead) {
+    await ensureTarget(lead.id, "Leadership", 4.3, 3.0, CompetencyCriticality.HIGH);
+  }
+  if (collab) {
+    await ensureTarget(collab.id, "Engineering", 4.0, 3.0, CompetencyCriticality.MEDIUM);
+    await ensureTarget(collab.id, "Sales", 4.5, 3.5, CompetencyCriticality.HIGH);
+  }
 }
 
 async function seed360(
@@ -1195,6 +1260,7 @@ export async function seedDemoOrganization(): Promise<void> {
     }
 
     const competencyBundles = await seedCompetenciesAndActions(org.id, cfg.name);
+    await seedCompetencyTargets(org.id);
     const competencyKeys = ["communication", "leadership", "collaboration"];
 
     await seed360(org.id, userByEmail, competencyKeys, cfg.patterns360, cfg.name, cfg.adminEmail);
