@@ -1,9 +1,19 @@
+import { Suspense } from "react";
 import prisma from "@/lib/prisma";
 import { requirePlatformSuperAdmin } from "@/lib/super-admin-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResetDemoButton } from "./reset-demo-button";
+import { SuperAdminSkeleton } from "@/components/ui/skeleton-loading";
 
 export default async function SuperAdminHomePage() {
+  return (
+    <Suspense fallback={<SuperAdminSkeleton />}>
+      <SuperAdminContent />
+    </Suspense>
+  );
+}
+
+async function SuperAdminContent() {
   await requirePlatformSuperAdmin();
   const [orgCount, templateCount, questionCount] = await Promise.all([
     prisma.organization.count(),
@@ -25,8 +35,8 @@ export default async function SuperAdminHomePage() {
         <CardHeader>
           <CardTitle className="text-lg">Pilot demo dataset</CardTitle>
           <CardDescription>
-            Recreates the Acme Corp tenant (slug <code className="text-foreground">acme-demo</code>), demo users,
-            completed 360s, IQ/EQ sessions, and sample actions. Same as <code className="text-foreground">npm run seed:demo</code>.
+            Recreates the Acme Corp tenant (slug acme-demo), demo users,
+            completed 360s, IQ/EQ sessions, and sample actions. Same as npm run seed:demo.
           </CardDescription>
         </CardHeader>
         <CardContent>

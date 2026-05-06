@@ -31,12 +31,12 @@ export function hasOpenRouterCredentials(): boolean {
 }
 
 export const PRIMARY_MODEL =
-  process.env.AI_PRIMARY_MODEL || "nvidia/nemotron-3-super-120b-a12b:free";
+  process.env.AI_PRIMARY_MODEL || "deepseek/deepseek-chat-v3-5:free";
 
 export type AIGenerationResult = {
   success: boolean;
   content: string;
-  source: "AI_NEMOTRON" | "RULE_BASED" | "CACHED";
+  source: "AI_GENERATED" | "AI_NEMOTRON" | "RULE_BASED" | "CACHED";
   modelUsed?: string;
   error?: string;
   generationTimeMs: number;

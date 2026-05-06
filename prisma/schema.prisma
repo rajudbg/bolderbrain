@@ -48,6 +48,7 @@ model User {
   aiInsights              AIInsight[]
   trainingNeeds           TrainingNeed[]
   skillsInventoryRows     SkillsInventory[]
+  userNotifications       UserNotification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1022,4 +1023,32 @@ model TrainingEnrollment {
   @@unique([trainingProgramId, userId])
   @@index([userId])
   @@index([trainingProgramId])
+}
+
+// ─── In-App Notifications ────────────────────────────────────────────────────
+
+enum NotificationType {
+  RESULTS_READY_360
+  ACTION_ASSIGNED
+  EQ_RESULTS_READY
+  PSYCH_RESULTS_READY
+  REMINDER
+}
+
+model UserNotification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  body        String
+  /// Optional deep-link within the app (e.g. /app/assessments/eq/{id}/results)
+  href        String?
+  isRead      Boolean          @default(false)
+  isDismissed Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, isDismissed])
+  @@index([userId, createdAt(sort: Desc)])
 }

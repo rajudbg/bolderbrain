@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { auth } from "@/auth";
 import { listAssessmentsWhereIamSubject, listMyEvaluatorAssignments } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { EvaluatorStatus } from "@/generated/prisma/enums";
 import { redirect } from "next/navigation";
+import { AssessmentsPageSkeleton } from "@/components/ui/skeleton-loading";
 
 export default async function MyAssessmentsPage() {
   const session = await auth();
@@ -12,6 +14,14 @@ export default async function MyAssessmentsPage() {
     redirect("/login?callbackUrl=/assessments");
   }
 
+  return (
+    <Suspense fallback={<AssessmentsPageSkeleton />}>
+      <AssessmentsContent />
+    </Suspense>
+  );
+}
+
+async function AssessmentsContent() {
   const [rows, asSubject] = await Promise.all([
     listMyEvaluatorAssignments(),
     listAssessmentsWhereIamSubject(),
@@ -39,25 +49,25 @@ export default async function MyAssessmentsPage() {
                   key={a.id}
                   className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-md"
                 >
-                <div>
-                  <p className="font-medium text-white/90">{a.title ?? a.template.name}</p>
-                  <p className="text-xs text-white/45">{a.organization.name}</p>
-                </div>
-                {a.result ? (
-                  <Link
-                    href={`/org/${a.organization.slug}/assessments/${a.id}/results`}
-                    className={buttonVariants({ size: "sm", variant: "outline" })}
-                  >
-                    View results
-                  </Link>
-                ) : (
-                  <span className="text-xs text-white/45">Results pending raters</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+                  <div>
+                    <p className="font-medium text-white/90">{a.title ?? a.template.name}</p>
+                    <p className="text-xs text-white/45">{a.organization.name}</p>
+                  </div>
+                  {a.result ? (
+                    <Link
+                      href={`/org/${a.organization.slug}/assessments/${a.id}/results`}
+                      className={buttonVariants({ size: "sm", variant: "outline" })}
+                    >
+                      View results
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-white/45">Results pending raters</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <h2 className="font-heading mb-3 text-lg font-medium text-white/85">Your rater tasks</h2>
         {rows.length === 0 ? (
@@ -75,18 +85,18 @@ export default async function MyAssessmentsPage() {
                   <div>
                     <p className="font-medium text-white/90">{a.title ?? a.template.name}</p>
                     <p className="text-xs text-white/45">
-                    {a.organization.name} · Subject: {a.subject.name ?? a.subject.email} · You:{" "}
-                    {ev.role.replace(/_/g, " ")}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={done ? "default" : "secondary"}>{ev.status.replace(/_/g, " ")}</Badge>
-                  <Link href={`/assessments/${ev.id}`} className={buttonVariants({ size: "sm" })}>
-                    {done ? "View" : "Continue"}
-                  </Link>
-                </div>
-              </li>
-            );
+                      {a.organization.name} &middot; Subject: {a.subject.name ?? a.subject.email} &middot; You:{" "}
+                      {ev.role.replace(/_/g, " ")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={done ? "default" : "secondary"}>{ev.status.replace(/_/g, " ")}</Badge>
+                    <Link href={`/assessments/${ev.id}`} className={buttonVariants({ size: "sm" })}>
+                      {done ? "View" : "Continue"}
+                    </Link>
+                  </div>
+                </li>
+              );
             })}
           </ul>
         )}

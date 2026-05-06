@@ -91,6 +91,24 @@ export function ContentTemplateBuilder() {
 
   const canRemove = questions.length > 5;
 
+  const selectedKindLabel = useMemo(() => {
+    if (kind === TrainingContentTemplateKind.KNOWLEDGE_TEST) return "Knowledge test";
+    if (kind === TrainingContentTemplateKind.BEHAVIORAL_TEST) return "Behavioral (Likert)";
+    return kind;
+  }, [kind]);
+
+  const getQuestionTypeLabel = (type: TrainingContentQuestionType) => {
+    if (isKnowledge) {
+      if (type === TrainingContentQuestionType.SINGLE_CHOICE) return "Single choice";
+      if (type === TrainingContentQuestionType.MULTIPLE_CHOICE) return "Multiple choice";
+    } else {
+      if (type === TrainingContentQuestionType.LIKERT_5_SCALE) return "5-point agreement";
+      if (type === TrainingContentQuestionType.LIKERT_FREQUENCY) return "5-point frequency";
+      if (type === TrainingContentQuestionType.SEMANTIC_DIFFERENTIAL) return "Semantic scale";
+    }
+    return type;
+  };
+
   const addQuestion = () => {
     if (questions.length >= 50) {
       toast.error("Maximum 50 questions allowed");
@@ -207,7 +225,9 @@ export function ContentTemplateBuilder() {
             }}
           >
             <SelectTrigger className="border-white/10 bg-white/[0.05] text-white/90">
-              <SelectValue />
+              <SelectValue>
+                {selectedKindLabel}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="border border-white/12 bg-[#161618] text-white/95">
               <SelectItem value={TrainingContentTemplateKind.KNOWLEDGE_TEST}>Knowledge test</SelectItem>
@@ -343,7 +363,9 @@ export function ContentTemplateBuilder() {
                       }}
                     >
                       <SelectTrigger className="border-white/10 bg-white/[0.05] text-white/90">
-                        <SelectValue />
+                        <SelectValue>
+                          {getQuestionTypeLabel(q.type)}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent className="border border-white/12 bg-[#161618] text-white/95">
                         {isKnowledge ? (

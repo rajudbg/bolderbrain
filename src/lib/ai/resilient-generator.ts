@@ -80,7 +80,7 @@ export async function generateWithFallback(
       return {
         success: true,
         content,
-        source: "AI_NEMOTRON",
+        source: "AI_GENERATED",
         modelUsed: PRIMARY_MODEL,
         generationTimeMs: Date.now() - startTime,
       };

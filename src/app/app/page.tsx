@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getEmployeeDashboardPayload } from "@/lib/employee-dashboard";
 import { getRecommendationsForUser } from "@/lib/recommendations";
@@ -15,6 +16,7 @@ import { DashboardAnalyticsCharts } from "./_components/dashboard-analytics-char
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CardSkeleton, ChartSkeleton, TableRowSkeleton } from "@/components/ui/skeleton-loading";
 
 export default async function EmployeeDashboardPage() {
   const data = await getEmployeeDashboardPayload();
@@ -42,7 +44,9 @@ export default async function EmployeeDashboardPage() {
         </p>
       </header>
 
-      <EmployeeOnboarding />
+      <Suspense fallback={<EmployeeOnboardingSkeleton />}>
+        <EmployeeOnboarding />
+      </Suspense>
 
       {/* Primary Actions & Recommendations */}
       <section className="grid gap-6 lg:grid-cols-2">
@@ -53,25 +57,29 @@ export default async function EmployeeDashboardPage() {
           total={data.weeklyFocus.total}
           aiSmartActions={data.aiSmartActions}
         />
-        <RecommendationsWidget
-          recommendations={allRecommendations}
-          highPriorityCount={recommendations?.highPriorityCount || 0}
-        />
+        <Suspense fallback={<CardSkeleton />}>
+          <RecommendationsWidget
+            recommendations={allRecommendations}
+            highPriorityCount={recommendations?.highPriorityCount || 0}
+          />
+        </Suspense>
       </section>
 
-      <DashboardAnalyticsCharts
-        assessmentMix={data.assessmentActivityMix}
-        eqDomains={data.eqDomainChart}
-      />
+      <Suspense fallback={<DashboardChartsSkeleton />}>
+        <DashboardAnalyticsCharts
+          assessmentMix={data.assessmentActivityMix}
+          eqDomains={data.eqDomainChart}
+        />
+      </Suspense>
 
       {!data.profile ? (
         <DashboardEmpty tenants={data.tenants} isOrgAdmin={data.isOrgAdmin} />
       ) : (
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="bg-white/[0.03] border border-white/10">
-            <TabsTrigger value="profile">Behavior Profile</TabsTrigger>
-            <TabsTrigger value="insights">Insights</TabsTrigger>
-            <TabsTrigger value="trends">Trends</TabsTrigger>
+          <TabsList className="w-full overflow-x-auto border border-white/10 bg-white/[0.03] flex-nowrap">
+            <TabsTrigger value="profile" className="shrink-0">Behavior Profile</TabsTrigger>
+            <TabsTrigger value="insights" className="shrink-0">Insights</TabsTrigger>
+            <TabsTrigger value="trends" className="shrink-0">Trends</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6">
@@ -150,14 +158,40 @@ export default async function EmployeeDashboardPage() {
           </TabsContent>
 
           <TabsContent value="trends">
-            <CompetencyTrendsBlock trends={data.competencyTrends} />
+            <Suspense fallback={<TrendSkeleton />}>
+              <CompetencyTrendsBlock trends={data.competencyTrends} />
+            </Suspense>
           </TabsContent>
         </Tabs>
       )}
 
-      <section>
+      <Suspense fallback={<CardSkeleton><TableRowSkeleton count={3} /></CardSkeleton>}>
         <RecentAssessmentsWidget rows={data.recentAssessments} />
-      </section>
+      </Suspense>
     </div>
   );
+}
+
+function EmployeeOnboardingSkeleton() {
+  return (
+    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-6">
+      <div className="space-y-3">
+        <div className="h-4 w-32 animate-pulse rounded-full bg-white/[0.08]" />
+        <div className="h-3 w-48 animate-pulse rounded-full bg-white/[0.06]" />
+      </div>
+    </div>
+  );
+}
+
+function DashboardChartsSkeleton() {
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <CardSkeleton><ChartSkeleton height="260px" /></CardSkeleton>
+      <CardSkeleton><ChartSkeleton height="260px" /></CardSkeleton>
+    </div>
+  );
+}
+
+function TrendSkeleton() {
+  return <CardSkeleton><ChartSkeleton height="220px" /></CardSkeleton>;
 }

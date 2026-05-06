@@ -138,6 +138,20 @@ export function TemplateFormDialog({
     [organizations],
   );
 
+  const selectedOrgName = useMemo(() => {
+    if (!organizationId || organizationId === EMPTY_ORG) return "Select organization";
+    const org = organizations.find((o) => o.id === organizationId);
+    return org ? `${org.name} (${org.slug})` : "Select organization";
+  }, [organizationId, organizations]);
+
+  const selectedTypeLabel = useMemo(() => {
+    return type.replace(/_/g, " ");
+  }, [type]);
+
+  const selectedScoringLabel = useMemo(() => {
+    return scoringStrategy.replace(/_/g, " ");
+  }, [scoringStrategy]);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (mode === "create" && !organizationId) {
@@ -202,7 +216,9 @@ export function TemplateFormDialog({
                   items={orgSelectItems}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select organization" />
+                    <SelectValue placeholder="Select organization">
+                      {selectedOrgName}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={EMPTY_ORG}>Select organization</SelectItem>
@@ -229,7 +245,9 @@ export function TemplateFormDialog({
                 <Label>Assessment type</Label>
                 <Select value={type} onValueChange={(v) => setType((v ?? type) as AssessmentTemplateType)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {selectedTypeLabel}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {TEMPLATE_TYPES.map((t) => (
@@ -247,7 +265,9 @@ export function TemplateFormDialog({
                   onValueChange={(v) => setScoringStrategy((v ?? scoringStrategy) as ScoringStrategy)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {selectedScoringLabel}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {SCORING.map((s) => (

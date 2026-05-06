@@ -63,6 +63,24 @@ export function NewTrainingForm({
     [templates],
   );
 
+  const contentTemplateItems = useMemo(
+    () => [
+      { value: EMPTY_CONTENT, label: "Select template" },
+      ...contentTemplates.map((t) => ({ value: t.id, label: `${t.name} (${t._count.questions} questions)` })),
+    ],
+    [contentTemplates],
+  );
+
+  const selectedTemplateName = useMemo(() => {
+    if (templateId === EMPTY_TEMPLATE) return "Template";
+    return templates.find((t) => t.id === templateId)?.name ?? "Template";
+  }, [templateId, templates]);
+
+  const selectedContentTemplateName = useMemo(() => {
+    if (contentTemplateId === EMPTY_CONTENT) return "Template";
+    return contentTemplates.find((t) => t.id === contentTemplateId)?.name ?? "Template";
+  }, [contentTemplateId, contentTemplates]);
+
   function toggle(uid: string) {
     setSelected((prev) => {
       const n = new Set(prev);
@@ -215,7 +233,9 @@ export function NewTrainingForm({
           <Label className="text-white/80">360 template (pre & post)</Label>
           <Select value={templateId} onValueChange={(v) => setTemplateId(v ?? EMPTY_TEMPLATE)} items={templateItems}>
             <SelectTrigger className="border-white/10 bg-white/[0.05] text-white/90">
-              <SelectValue placeholder="Template" />
+              <SelectValue placeholder="Template">
+                {selectedTemplateName}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="border border-white/12 bg-[#161618] text-white/95">
               <SelectItem value={EMPTY_TEMPLATE}>Select template</SelectItem>
@@ -233,15 +253,17 @@ export function NewTrainingForm({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-white/80">Training content template</Label>
-            <Select value={contentTemplateId} onValueChange={(v) => setContentTemplateId(v ?? EMPTY_CONTENT)}>
+            <Select value={contentTemplateId} onValueChange={(v) => setContentTemplateId(v ?? EMPTY_CONTENT)} items={contentTemplateItems}>
               <SelectTrigger className="border-white/10 bg-white/[0.05] text-white/90">
-                <SelectValue placeholder="Template" />
+                <SelectValue placeholder="Template">
+                  {selectedContentTemplateName}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="border border-white/12 bg-[#161618] text-white/95">
                 <SelectItem value={EMPTY_CONTENT}>Select template</SelectItem>
                 {contentTemplates.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
-                    {t.name} ({t._count.questions} questions · {t.kind})
+                    {t.name} ({t._count.questions} questions)
                   </SelectItem>
                 ))}
               </SelectContent>

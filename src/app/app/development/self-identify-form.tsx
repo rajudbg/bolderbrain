@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,10 @@ export function SelfIdentifyForm({
   const [competencyId, setCompetencyId] = useState(competencies[0]?.id ?? "");
   const [note, setNote] = useState("");
   const [pending, start] = useTransition();
+
+  const selectedCompetencyName = useMemo(() => {
+    return competencies.find((c) => c.id === competencyId)?.name ?? "Choose competency";
+  }, [competencyId, competencies]);
 
   if (competencies.length === 0) {
     return (
@@ -49,7 +53,9 @@ export function SelfIdentifyForm({
           <Label>Competency</Label>
           <Select value={competencyId} onValueChange={(v) => setCompetencyId(v ?? "")}>
             <SelectTrigger>
-              <SelectValue placeholder="Choose competency" />
+              <SelectValue placeholder="Choose competency">
+                {selectedCompetencyName}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {competencies.map((c) => (

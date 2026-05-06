@@ -95,7 +95,7 @@ export function DashboardAnalyticsCharts({
                 <YAxis
                   type="category"
                   dataKey="domain"
-                  width={118}
+                  width={90}
                   tick={{ fontSize: 11, fill: "rgba(255,255,255,0.55)" }}
                 />
                 <Tooltip

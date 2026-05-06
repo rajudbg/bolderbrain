@@ -10,7 +10,10 @@ import type { AssessmentQuestionType } from "@/generated/prisma/enums";
 import { autoAssignActionsAfterPsych } from "@/lib/action-engine";
 import { computePsychometricResult, type PsychForcedResponse, type PsychSemanticResponse } from "@/lib/psychometric-scoring";
 import { parsePsychometricTemplateConfig } from "@/lib/psychometric-template-config";
-import { OCEAN_TRAITS } from "@/lib/ocean-traits";
+import { OCEAN_TRAITS, oceanDisplayName } from "@/lib/ocean-traits";
+import { generatePsychAiNarrative } from "@/lib/ai/eq-psych-narratives";
+import { createNotification } from "@/lib/notifications";
+import { NotificationType } from "@/generated/prisma/enums";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
@@ -257,6 +260,36 @@ export async function submitPsychAttempt(attemptId: string) {
   revalidatePath("/app/assessments/psychometric");
   revalidatePath(`/app/assessments/psychometric/${attempt.id}/results`);
   revalidatePath("/app");
+
+  // Notify employee: psych results ready
+  void createNotification({
+    userId,
+    type: NotificationType.PSYCH_RESULTS_READY,
+    title: "Your personality results are ready",
+    body: `Your Big Five personality assessment is complete. View your personalised AI coaching note and team dynamics insight.`,
+    href: `/app/assessments/psychometric/${attempt.id}/results`,
+  });
+
+  // Generate AI narrative in background (non-blocking)
+  const sortedTraits = [...OCEAN_TRAITS].sort(
+    (a, b) => scored.traitPercentiles[b] - scored.traitPercentiles[a],
+  );
+  const topTraits = sortedTraits.slice(0, 2).map((t) => ({ trait: oceanDisplayName(t), percentile: scored.traitPercentiles[t] }));
+  const lowestTraitEntry = sortedTraits[sortedTraits.length - 1]!;
+  generatePsychAiNarrative({
+    attemptId: attempt.id,
+    summaryLine: scored.summaryLine,
+    topTraits,
+    lowestTrait: { trait: oceanDisplayName(lowestTraitEntry), percentile: scored.traitPercentiles[lowestTraitEntry] },
+    teamDynamicsText: scored.teamDynamicsText,
+  }).then(async (aiResult) => {
+    if (aiResult.narrativeText && aiResult.source !== "RULE_BASED") {
+      await prisma.psychTestResult.update({
+        where: { attemptId: attempt.id },
+        data: { teamDynamicsText: aiResult.narrativeText },
+      }).catch(() => { /* non-critical */ });
+    }
+  }).catch(() => { /* non-critical */ });
 
   return { ok: true as const };
 }

@@ -99,6 +99,15 @@ export function TnaDashboardClient(props: {
   const [pendingAi, startAi] = useTransition();
   const [pendingBulk, startBulk] = useTransition();
   
+  const selectedCompetencyName = useMemo(() => {
+    if (compFilter === "all") return "All competencies";
+    return competencies.find((c) => c.id === compFilter)?.name ?? "All competencies";
+  }, [compFilter, competencies]);
+
+  const selectedProgramName = useMemo(() => {
+    return programs.find((p) => p.id === programId)?.name ?? "Training program";
+  }, [programId, programs]);
+  
   // AI Recommendation Modal State
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiRecommendation, setAiRecommendation] = useState<{
@@ -137,6 +146,23 @@ export function TnaDashboardClient(props: {
       else next.add(id);
       return next;
     });
+  }
+
+  function toggleAllVisible() {
+    const allSelected = filteredNeeds.length > 0 && filteredNeeds.every((n) => selected.has(n.id));
+    if (allSelected) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        filteredNeeds.forEach((n) => next.delete(n.id));
+        return next;
+      });
+    } else {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        filteredNeeds.forEach((n) => next.add(n.id));
+        return next;
+      });
+    }
   }
 
   async function handleAiRecommend(competencyName: string, gap: number) {
@@ -361,7 +387,9 @@ export function TnaDashboardClient(props: {
             </Select>
             <Select value={compFilter} onValueChange={(v) => setCompFilter(v ?? "all")}>
               <SelectTrigger className="w-[180px] border-white/15 bg-white/[0.04] text-white/85">
-                <SelectValue placeholder="Competency" />
+                <SelectValue placeholder="Competency">
+                  {selectedCompetencyName}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All competencies</SelectItem>
@@ -378,7 +406,9 @@ export function TnaDashboardClient(props: {
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
           <Select value={programId} onValueChange={(v) => setProgramId(v ?? "")}>
             <SelectTrigger className="min-w-[220px] border-white/15 bg-white/[0.04] text-white/85">
-              <SelectValue placeholder="Training program" />
+              <SelectValue placeholder="Training program">
+                {selectedProgramName}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {programs.map((p) => (

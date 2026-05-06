@@ -46,7 +46,7 @@ export default async function QuestionsPage({
     config: q.config,
     correctOptionId: q.correctOptionId,
     traitCategory: q.traitCategory,
-    weight: q.weight,
+    weight: q.weight ? Number(q.weight) : null,
     timeLimitSeconds: q.timeLimitSeconds,
     reverseScored: q.reverseScored,
     sortOrder: q.sortOrder,

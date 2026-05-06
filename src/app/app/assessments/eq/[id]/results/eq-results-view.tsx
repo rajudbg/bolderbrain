@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Heart, TrendingUp } from "lucide-react";
+import { Heart, TrendingUp, Sparkles } from "lucide-react";
 import { EqAmbientBackground, glassCardClassName } from "@/components/cerebral-glass";
 import { Button } from "@/components/ui/button";
 import { EQ_DOMAIN_RESOURCES } from "@/lib/eq-resources";
@@ -345,9 +345,17 @@ export function EqResultsView({
           </div>
         )}
 
-        <div className={cn(glassCardClassName("p-5"))}>
-          <h3 className="font-heading text-base font-semibold text-white/90">Narrative</h3>
-          <p className="mt-3 leading-relaxed text-white/70">{result.narrativeText}</p>
+        <div className={cn(glassCardClassName("p-5"), "border-cyan-500/20 bg-cyan-950/10")}>
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_12px_rgba(6,182,212,0.4)]">
+              <Sparkles className="size-3.5 text-white" />
+            </div>
+            <h3 className="font-heading text-base font-semibold text-white/90">AI coaching narrative</h3>
+            <span className="ml-auto rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-medium text-cyan-400">
+              AI-enhanced
+            </span>
+          </div>
+          <p className="leading-relaxed text-white/70">{result.narrativeText}</p>
         </div>
 
         {prev ? (

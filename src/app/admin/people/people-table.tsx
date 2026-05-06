@@ -122,6 +122,14 @@ function DepartmentEditor({ userId, initial }: { userId: string; initial: string
 
 function RoleSelect({ userId, initial }: { userId: string; initial: OrganizationRole }) {
   const [role, setRole] = useState(initial);
+
+  const selectedRoleLabel = useMemo(() => {
+    if (role === OrganizationRole.EMPLOYEE) return "Employee";
+    if (role === OrganizationRole.ADMIN) return "Admin";
+    if (role === OrganizationRole.SUPER_ADMIN) return "Org super admin";
+    return role;
+  }, [role]);
+
   return (
     <Select
       value={role}
@@ -138,7 +146,9 @@ function RoleSelect({ userId, initial }: { userId: string; initial: Organization
       }}
     >
       <SelectTrigger className="h-8 w-[140px] text-xs">
-        <SelectValue />
+        <SelectValue>
+          {selectedRoleLabel}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={OrganizationRole.EMPLOYEE}>Employee</SelectItem>

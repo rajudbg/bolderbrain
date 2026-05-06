@@ -35,6 +35,7 @@ import { questionTypeLabel } from "@/lib/assessment-question-types";
 import type { AssessmentTemplateType } from "@/generated/prisma/enums";
 import { QuestionFormDialog, type QuestionDTO } from "./question-form-dialog";
 import { deleteQuestion } from "../../actions";
+import { useMemo } from "react";
 
 /** Keeps org Select controlled when none chosen (never `value={undefined}`). */
 const EMPTY_ORG = "__questions_org_none__" as const;
@@ -98,6 +99,16 @@ export function QuestionsClient({
     ...organizations.map((o) => ({ value: o.id, label: o.name })),
   ];
 
+  const selectedOrgName = useMemo(() => {
+    if (!selectedOrgId || selectedOrgId === EMPTY_ORG) return "Select organization";
+    return organizations.find((o) => o.id === selectedOrgId)?.name ?? "Select organization";
+  }, [selectedOrgId, organizations]);
+
+  const selectedTemplateName = useMemo(() => {
+    if (!selectedTemplateId || selectedTemplateId === "all") return "All templates";
+    return templateOptions.find((t) => t.id === selectedTemplateId)?.name ?? "All templates";
+  }, [selectedTemplateId, templateOptions]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -116,7 +127,9 @@ export function QuestionsClient({
               items={orgSelectItems}
             >
               <SelectTrigger className="w-[min(100vw-2rem,240px)]">
-                <SelectValue placeholder="Select organization" />
+                <SelectValue placeholder="Select organization">
+                  {selectedOrgName}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={EMPTY_ORG}>Select organization</SelectItem>
@@ -136,7 +149,9 @@ export function QuestionsClient({
               disabled={!selectedOrgId}
             >
               <SelectTrigger className="w-[min(100vw-2rem,260px)]">
-                <SelectValue placeholder="All templates" />
+                <SelectValue placeholder="All templates">
+                  {selectedTemplateName}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All templates</SelectItem>

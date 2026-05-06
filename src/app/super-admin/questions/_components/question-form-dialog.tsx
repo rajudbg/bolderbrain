@@ -159,15 +159,17 @@ export function QuestionFormDialog({
   const [semanticRight, setSemanticRight] = useState("");
   const [semanticSteps, setSemanticSteps] = useState(5);
 
-  const selectedTemplate = useMemo(
-    () => templates.find((t) => t.id === templateId),
-    [templates, templateId],
-  );
+  const selectedTemplate = templates.find((t) => t.id === templateId);
+  const selectedTemplateName = selectedTemplate?.name ?? "Select template";
+  const selectedQuestionTypeLabel = questionTypeLabel(questionType);
+  const allowedQuestionTypes = questionTypesForTemplate(selectedTemplate?.type ?? AssessmentTemplateType.IQ_COGNITIVE);
 
-  const allowedQuestionTypes = useMemo(
-    () => (selectedTemplate ? questionTypesForTemplate(selectedTemplate.type) : []),
-    [selectedTemplate],
-  );
+  const selectedPsychItemKindLabel = useMemo(() => {
+    if (psychItemKind === "normal") return "Normal";
+    if (psychItemKind === "consistency") return "Consistency check (paired)";
+    if (psychItemKind === "social_desirability") return "Social desirability";
+    return psychItemKind;
+  }, [psychItemKind]);
 
   const isPsychTemplate = selectedTemplate?.type === AssessmentTemplateType.PSYCHOMETRIC;
   const psychNeedsTraitField = Boolean(
@@ -560,7 +562,9 @@ export function QuestionFormDialog({
               <Label>Assessment template</Label>
               <Select value={templateId || undefined} onValueChange={(v) => setTemplateId(v ?? "")}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select template" />
+                  <SelectValue placeholder="Select template">
+                    {selectedTemplate?.name ?? "Select template"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {templates.map((t) => {
@@ -587,7 +591,9 @@ export function QuestionFormDialog({
                 onValueChange={(v) => setQuestionType((v ?? questionType) as AssessmentQuestionType)}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {selectedQuestionTypeLabel}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {allowedQuestionTypes.map((qt) => (
@@ -769,7 +775,9 @@ export function QuestionFormDialog({
                             }
                           >
                             <SelectTrigger>
-                              <SelectValue />
+                              <SelectValue>
+                                {row.trait}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               {OCEAN_TRAITS.map((t) => (
@@ -801,7 +809,9 @@ export function QuestionFormDialog({
                         }
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <SelectValue>
+                            {selectedPsychItemKindLabel}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="normal">Normal</SelectItem>

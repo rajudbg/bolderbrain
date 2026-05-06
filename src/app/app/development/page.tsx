@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getDevelopmentHubPayload } from "./actions";
 import { DevelopmentRadarChart } from "./development-radar-chart";
 import { SelfIdentifyForm } from "./self-identify-form";
+import { DevPlanClient } from "./dev-plan-client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -26,6 +27,9 @@ export default async function DevelopmentHubPage() {
           learning.
         </p>
       </header>
+
+      {/* AI 90-Day Development Plan */}
+      <DevPlanClient />
 
       <Card className="border-border/60">
         <CardHeader>

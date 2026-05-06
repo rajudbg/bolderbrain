@@ -48,6 +48,20 @@ export function CreateAssessmentSection({
     [members],
   );
 
+  const selectedTemplateName = useMemo(() => {
+    return templates.find((t) => t.id === templateId)?.name ?? "Template";
+  }, [templateId, templates]);
+
+  const selectedSubjectLabel = useMemo(() => {
+    if (!subjectUserId) return "Select employee";
+    return memberOptions.find((m) => m.userId === subjectUserId)?.label ?? "Select employee";
+  }, [subjectUserId, memberOptions]);
+
+  const selectedManagerLabel = useMemo(() => {
+    if (managerUserId === "__none__") return "None";
+    return memberOptions.find((m) => m.userId === managerUserId)?.label ?? "None";
+  }, [managerUserId, memberOptions]);
+
   function togglePeer(uid: string) {
     setPeerIds((prev) => {
       const next = new Set(prev);
@@ -127,7 +141,9 @@ export function CreateAssessmentSection({
             <Label>Template</Label>
             <Select value={templateId} onValueChange={(v) => setTemplateId(v ?? "")}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Template" />
+                <SelectValue placeholder="Template">
+                  {selectedTemplateName}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {templates.map((t) => (
@@ -142,7 +158,9 @@ export function CreateAssessmentSection({
             <Label>Subject (self assessment)</Label>
             <Select value={subjectUserId || undefined} onValueChange={(v) => setSubjectUserId(v ?? "")}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select employee" />
+                <SelectValue placeholder="Select employee">
+                  {selectedSubjectLabel}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {memberOptions.map((m) => (
@@ -160,7 +178,9 @@ export function CreateAssessmentSection({
               onValueChange={(v) => setManagerUserId(v as typeof managerUserId)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="None" />
+                <SelectValue placeholder="None">
+                  {selectedManagerLabel}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">None</SelectItem>

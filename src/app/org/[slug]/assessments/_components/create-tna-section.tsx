@@ -45,6 +45,15 @@ export function CreateTnaSection({
     [members],
   );
 
+  const selectedTemplateName = useMemo(() => {
+    return templates.find((t) => t.id === templateId)?.name ?? "Template";
+  }, [templateId, templates]);
+
+  const selectedSubjectLabel = useMemo(() => {
+    if (!subjectUserId) return "Select employee";
+    return memberOptions.find((m) => m.userId === subjectUserId)?.label ?? "Select employee";
+  }, [subjectUserId, memberOptions]);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!templateId || !subjectUserId || !title.trim()) {
@@ -105,7 +114,9 @@ export function CreateTnaSection({
             <Label>Template</Label>
             <Select value={templateId} onValueChange={(v) => setTemplateId(v ?? "")}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Template" />
+                <SelectValue placeholder="Template">
+                  {selectedTemplateName}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {templates.map((t) => (
@@ -120,7 +131,9 @@ export function CreateTnaSection({
             <Label>Participant</Label>
             <Select value={subjectUserId || undefined} onValueChange={(v) => setSubjectUserId(v ?? "")}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select employee" />
+                <SelectValue placeholder="Select employee">
+                  {selectedSubjectLabel}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {memberOptions.map((m) => (

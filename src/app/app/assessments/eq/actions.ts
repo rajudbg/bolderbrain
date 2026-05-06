@@ -10,6 +10,9 @@ import type { AssessmentQuestionType } from "@/generated/prisma/enums";
 import { autoAssignActionsAfterEq } from "@/lib/action-engine";
 import { EQ_DOMAIN_KEYS, domainDisplayName, domainSortIndex, type EqDomainKey } from "@/lib/eq-domains";
 import { computeEqAssessmentResult, type EqResponseEntry } from "@/lib/eq-scoring";
+import { generateEqAiNarrative } from "@/lib/ai/eq-psych-narratives";
+import { createNotification } from "@/lib/notifications";
+import { NotificationType } from "@/generated/prisma/enums";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
@@ -244,6 +247,36 @@ export async function submitEqAttempt(attemptId: string) {
     userId,
     organizationId: attempt.organizationId,
     lowestDomain: computed.lowestDomain,
+  });
+
+  // Generate AI narrative in background (non-blocking)
+  const resultRecord = await prisma.eqTestResult.findUnique({ where: { attemptId: attempt.id } });
+  if (resultRecord) {
+    generateEqAiNarrative({
+      attemptId: attempt.id,
+      compositeScore: computed.compositeScore,
+      percentileComposite: computed.percentileComposite,
+      highestDomain: computed.highestDomain,
+      lowestDomain: computed.lowestDomain,
+      quadrantLabel: computed.quadrantLabel,
+      consistencyFlags: computed.consistencyFlags,
+    }).then(async (aiResult) => {
+      if (aiResult.source !== "RULE_BASED" || aiResult.narrativeText !== computed.narrativeText) {
+        await prisma.eqTestResult.update({
+          where: { attemptId: attempt.id },
+          data: { narrativeText: aiResult.narrativeText },
+        }).catch(() => { /* non-critical */ });
+      }
+    }).catch(() => { /* non-critical */ });
+  }
+
+  // Notify employee: EQ results ready
+  void createNotification({
+    userId,
+    type: NotificationType.EQ_RESULTS_READY,
+    title: "Your EQ results are ready",
+    body: `Your emotional intelligence assessment is complete. Highest domain: ${computed.highestDomain}. Check your coaching narrative.`,
+    href: `/app/assessments/eq/${attempt.id}/results`,
   });
 
   revalidatePath("/app/assessments/eq");

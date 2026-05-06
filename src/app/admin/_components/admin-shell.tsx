@@ -20,7 +20,7 @@ import {
   Grid3x3,
   CircleUser,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -62,12 +62,21 @@ export function AdminShell({
   const [open, setOpen] = useState(false);
   const [presentation, setPresentation] = useState(false);
 
+  const selectedOrgName = useMemo(() => {
+    const org = organizations.find((o) => o.id === currentOrganizationId);
+    return org?.name ?? organizations[0]?.name ?? "Select org";
+  }, [currentOrganizationId, organizations]);
+
+  // Shared handler that closes the mobile sheet menu
+  const closeSheet = () => setOpen(false);
+
   useEffect(() => {
     document.documentElement.classList.toggle("admin-presentation", presentation);
     return () => document.documentElement.classList.remove("admin-presentation");
   }, [presentation]);
 
   async function onOrgChange(slug: string) {
+    closeSheet();
     await setAdminOrgSlugCookie(slug);
   }
 
@@ -92,7 +101,9 @@ export function AdminShell({
             }}
           >
             <SelectTrigger className="w-full border-white/10 bg-white/[0.04] text-left text-sm text-white/90 backdrop-blur-md">
-              <SelectValue placeholder="Select org" />
+              <SelectValue placeholder="Select org">
+                {selectedOrgName}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {organizations.map((o) => (
@@ -157,22 +168,64 @@ export function AdminShell({
       </aside>
 
       <div className="lg:pl-72">
+        {/* Mobile header */}
         <header className="admin-chrome sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-white/[0.06] bg-[#0F0F11]/75 px-4 shadow-sm backdrop-blur-md lg:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
-            <Button variant="ghost" size="icon" className="shrink-0 text-white/80" type="button" onClick={() => setOpen(true)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-white/80"
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-label="Open menu"
+            >
               <Menu className="size-5" />
             </Button>
             <SheetContent side="left" className="w-72 border-white/10 bg-[#1A1A1E]/95 p-0 backdrop-blur-xl">
-              <div className="flex h-14 items-center border-b border-white/10 px-4">
+              <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
                 <span className="font-heading font-semibold text-white">HR Intelligence</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white/50 hover:text-white"
+                  type="button"
+                  onClick={closeSheet}
+                  aria-label="Close menu"
+                >
+                  Close
+                </Button>
               </div>
               <div className="p-3">
+                <p className="text-caption-cerebral mb-2 px-3 text-xs">Organization</p>
+                <div className="px-2 pb-3">
+                  <Select
+                    value={
+                      organizations.find((o) => o.id === currentOrganizationId)?.slug ??
+                      organizations[0]?.slug ??
+                      ""
+                    }
+                    onValueChange={(v) => {
+                      if (v) void onOrgChange(v);
+                    }}
+                  >
+                    <SelectTrigger className="w-full border-white/10 bg-white/[0.04] text-left text-sm text-white/90 backdrop-blur-md">
+                      <SelectValue placeholder="Select org" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizations.map((o) => (
+                        <SelectItem key={o.id} value={o.slug}>
+                          {o.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <nav className="flex flex-col gap-1">
                   {nav.map(({ href, label, icon: Icon }) => (
                     <Link
                       key={href}
                       href={href}
-                      onClick={() => setOpen(false)}
+                      onClick={closeSheet}
                       className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/[0.06]"
                     >
                       <Icon className="size-4" />
@@ -181,11 +234,33 @@ export function AdminShell({
                   ))}
                 </nav>
               </div>
+              <div className="space-y-2 border-t border-white/10 p-4">
+                <p className="truncate text-xs text-white/50">
+                  {userName || "User"}
+                  {userEmail ? <span className="block text-[10px] text-white/40">{userEmail}</span> : null}
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  type="button"
+                  onClick={() => {
+                    closeSheet();
+                    signOut({ callbackUrl: "/" });
+                  }}
+                >
+                  <LogOut className="size-4" />
+                  Log out
+                </Button>
+              </div>
             </SheetContent>
           </Sheet>
           <span className="text-caption-cerebral normal-case">Admin</span>
         </header>
-        <div className="mx-auto max-w-[1600px] px-4 py-8 pl-6 pr-4 md:pl-10 md:pr-8 lg:px-10">{children}</div>
+
+        {/* Content area -- responsive padding, extra bottom room on small screens */}
+        <div className="mx-auto w-full max-w-[1600px] px-4 pb-24 pt-8 sm:px-6 sm:pb-10 md:px-10 md:pb-12 lg:px-12 lg:pb-10">
+          {children}
+        </div>
       </div>
 
       <style jsx global>{`

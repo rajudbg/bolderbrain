@@ -1,8 +1,9 @@
 import { Prisma } from "@/generated/prisma/client";
-import { UserActionStatus } from "@/generated/prisma/enums";
+import { UserActionStatus, NotificationType } from "@/generated/prisma/enums";
 import prisma from "@/lib/prisma";
 import type { Assessment360StoredResult } from "@/lib/assessment-360-result";
 import { getIsoWeekKey, previousWeekKey } from "@/lib/iso-week";
+import { createNotification } from "@/lib/notifications";
 
 export async function recordCompetencySnapshots(input: {
   assessmentId: string;
@@ -99,6 +100,14 @@ export async function autoAssignActionsAfter360(input: {
       });
       busyCompetencyIds.add(comp.id);
       slots -= 1;
+      // Fire-and-forget notification
+      void createNotification({
+        userId: input.subjectUserId,
+        type: NotificationType.ACTION_ASSIGNED,
+        title: "New action assigned",
+        body: `A new development action for ${comp.name} has been added to this week's focus.`,
+        href: "/app/actions",
+      });
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
         continue;
@@ -162,6 +171,13 @@ export async function autoAssignActionsAfterEq(input: {
         sourceEqAttemptId: input.attemptId,
       },
     });
+    void createNotification({
+      userId: input.userId,
+      type: NotificationType.ACTION_ASSIGNED,
+      title: "New action assigned",
+      body: `An EQ-based development action has been added to this week's focus.`,
+      href: "/app/actions",
+    });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return;
@@ -224,6 +240,13 @@ export async function autoAssignActionsAfterPsych(input: {
         source: "AUTO",
         sourcePsychAttemptId: input.attemptId,
       },
+    });
+    void createNotification({
+      userId: input.userId,
+      type: NotificationType.ACTION_ASSIGNED,
+      title: "New action assigned",
+      body: `A personality-based development action has been added to this week's focus.`,
+      href: "/app/actions",
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {

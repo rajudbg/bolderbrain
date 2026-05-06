@@ -76,6 +76,20 @@ export function Launch360ReviewForm({
     return [{ value: "__none__" as const, label: "None" }, ...rest];
   }, [memberOptions, subjectUserId]);
 
+  const selectedTemplateName = useMemo(() => {
+    return templates.find((t) => t.id === templateId)?.name ?? "Template";
+  }, [templateId, templates]);
+
+  const selectedSubjectLabel = useMemo(() => {
+    if (subjectUserId === EMPTY_SUBJECT) return "Select employee";
+    return memberOptions.find((m) => m.userId === subjectUserId)?.label ?? "Select employee";
+  }, [subjectUserId, memberOptions]);
+
+  const selectedManagerLabel = useMemo(() => {
+    if (managerUserId === "__none__") return "None";
+    return memberOptions.find((m) => m.userId === managerUserId)?.label ?? "None";
+  }, [managerUserId, memberOptions]);
+
   function togglePeer(uid: string) {
     setPeerIds((prev) => {
       const next = new Set(prev);
@@ -174,7 +188,9 @@ export function Launch360ReviewForm({
             <Label className="text-white/80">Template</Label>
             <Select value={templateId} onValueChange={(v) => setTemplateId(v ?? "")} items={templateItems}>
               <SelectTrigger className="border-white/10 bg-white/[0.05] text-white/90">
-                <SelectValue placeholder="Template" />
+                <SelectValue placeholder="Template">
+                  {selectedTemplateName}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className={selectContentClass}>
                 {templates.map((t) => (
@@ -193,7 +209,9 @@ export function Launch360ReviewForm({
               items={subjectItems}
             >
               <SelectTrigger className="border-white/10 bg-white/[0.05] text-white/90">
-                <SelectValue placeholder="Select employee" />
+                <SelectValue placeholder="Select employee">
+                  {selectedSubjectLabel}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className={selectContentClass}>
                 <SelectItem value={EMPTY_SUBJECT}>Select employee</SelectItem>
@@ -213,7 +231,9 @@ export function Launch360ReviewForm({
               items={managerItems}
             >
               <SelectTrigger className="border-white/10 bg-white/[0.05] text-white/90">
-                <SelectValue placeholder="None" />
+                <SelectValue placeholder="None">
+                  {selectedManagerLabel}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className={selectContentClass}>
                 <SelectItem value="__none__">None</SelectItem>

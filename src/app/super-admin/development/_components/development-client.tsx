@@ -173,13 +173,24 @@ export function DevelopmentClient({
     );
   }
 
+  const selectedOrgName = useMemo(() => {
+    return organizations.find((o) => o.id === orgId)?.name ?? "Select organization";
+  }, [orgId, organizations]);
+
+  const selectedCompetencyName = useMemo(() => {
+    if (!competencyId || competencyId === EMPTY_COMPETENCY) return "Select competency";
+    return competencies.find((c) => c.id === competencyId)?.name ?? "Select competency";
+  }, [competencyId, competencies]);
+
   return (
     <div className="space-y-8">
       <div className="space-y-2">
         <Label>Organization</Label>
         <Select value={orgId} onValueChange={(v) => setOrgId(v ?? "")} items={organizations.map((o) => ({ value: o.id, label: o.name }))}>
           <SelectTrigger className="max-w-md">
-            <SelectValue placeholder="Select organization" />
+            <SelectValue placeholder="Select organization">
+              {selectedOrgName}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {organizations.map((o) => (
@@ -279,7 +290,9 @@ export function DevelopmentClient({
                 items={competencySelectItems}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select competency" />
+                  <SelectValue placeholder="Select competency">
+                    {selectedCompetencyName}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={EMPTY_COMPETENCY}>Select competency</SelectItem>

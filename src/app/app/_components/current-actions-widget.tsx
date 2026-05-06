@@ -260,13 +260,13 @@ function ActionItemRow({ item }: { item: Item }) {
                     rows={2}
                   />
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-white/40">{reflection.length}/150</p>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => setShowComplete(false)} disabled={isSubmitting} className="h-7 text-xs">
+                    <Button size="sm" variant="ghost" onClick={() => setShowComplete(false)} disabled={isSubmitting} className="h-7 flex-1 text-xs sm:flex-none">
                       Cancel
                     </Button>
-                    <Button size="sm" onClick={handleComplete} disabled={isSubmitting || reflection.trim().length < 10} className="h-7 text-xs bg-indigo-500 hover:bg-indigo-600">
+                    <Button size="sm" onClick={handleComplete} disabled={isSubmitting || reflection.trim().length < 10} className="h-7 flex-1 text-xs sm:flex-none bg-indigo-500 hover:bg-indigo-600">
                       {isSubmitting ? "Saving..." : "Complete"}
                     </Button>
                   </div>

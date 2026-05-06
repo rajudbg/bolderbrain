@@ -248,7 +248,15 @@ export function PsychResultsView({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Team dynamics</CardTitle>
+            <div className="flex items-center gap-2">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_12px_rgba(6,182,212,0.35)]">
+                <Sparkles className="size-3.5 text-white" />
+              </div>
+              <CardTitle className="text-base">AI team dynamics coaching note</CardTitle>
+              <span className="ml-auto rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-medium text-cyan-400">
+                AI-enhanced
+              </span>
+            </div>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">{result.teamDynamicsText}</p>

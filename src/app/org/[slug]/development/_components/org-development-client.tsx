@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { orgDismissUserAction, orgManualAssignAction } from "../actions";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +60,17 @@ export function OrgDevelopmentClient({
   const [dismissReason, setDismissReason] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const selectedUserLabel = useMemo(() => {
+    if (!userId) return "Select user";
+    return members.find((m) => m.userId === userId)?.user.name?.trim() || members.find((m) => m.userId === userId)?.user.email || userId;
+  }, [userId, members]);
+
+  const selectedActionLabel = useMemo(() => {
+    if (!actionId) return "Select action";
+    const action = actions.find((a) => a.id === actionId);
+    return action ? `[${action.competency.key}] ${action.title}` : "Select action";
+  }, [actionId, actions]);
+
   async function assign() {
     if (!userId || !actionId) {
       toast.error("Choose a person and an action");
@@ -104,7 +115,9 @@ export function OrgDevelopmentClient({
             <Label>Team member</Label>
             <Select value={userId || undefined} onValueChange={(v) => setUserId(v ?? "")}>
               <SelectTrigger>
-                <SelectValue placeholder="Select user" />
+                <SelectValue placeholder="Select user">
+                  {selectedUserLabel}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {members.map((m) => (
@@ -119,7 +132,9 @@ export function OrgDevelopmentClient({
             <Label>Action</Label>
             <Select value={actionId || undefined} onValueChange={(v) => setActionId(v ?? "")}>
               <SelectTrigger>
-                <SelectValue placeholder="Select action" />
+                <SelectValue placeholder="Select action">
+                  {selectedActionLabel}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {actions.map((a) => (

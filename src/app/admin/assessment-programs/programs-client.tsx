@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Bell, Loader2 } from "lucide-react";
 import { OrgAssessmentAssignmentKind, OrgAssessmentAssignmentStatus } from "@/generated/prisma/enums";
@@ -88,6 +88,15 @@ export function AssignmentProgramsClient({
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const selectedTemplateName = useMemo(() => {
+    if (!templateId) return "Select template";
+    return templates.find((t) => t.id === templateId)?.name ?? "Select template";
+  }, [templateId, templates]);
+
+  const selectedKindLabel = useMemo(() => {
+    return KIND_OPTIONS.find((o) => o.value === kind)?.label ?? "Assessment type";
+  }, [kind]);
+
   const loadTemplates = useCallback(async (k: OrgAssessmentAssignmentKind) => {
     setLoadingTemplates(true);
     try {
@@ -137,7 +146,9 @@ export function AssignmentProgramsClient({
           <Label className="text-white/70">Assessment type</Label>
           <Select value={kind} onValueChange={(v) => setKind(v as OrgAssessmentAssignmentKind)}>
             <SelectTrigger className="border-white/10 bg-white/[0.04] text-white/90">
-              <SelectValue />
+              <SelectValue>
+                {selectedKindLabel}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {KIND_OPTIONS.map((o) => (
@@ -156,7 +167,9 @@ export function AssignmentProgramsClient({
             disabled={loadingTemplates}
           >
             <SelectTrigger className="border-white/10 bg-white/[0.04] text-white/90">
-              <SelectValue placeholder={loadingTemplates ? "Loading…" : "Select template"} />
+              <SelectValue placeholder={loadingTemplates ? "Loading…" : "Select template"}>
+                {loadingTemplates ? "Loading…" : selectedTemplateName}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {templates.map((t) => (

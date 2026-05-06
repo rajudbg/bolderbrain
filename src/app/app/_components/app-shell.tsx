@@ -23,6 +23,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { AiCoachChat } from "@/components/ai/ai-coach-chat";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const nav = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -123,9 +125,11 @@ export function AppShell({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  const closeSheet = () => setOpen(false);
+
   return (
     <div className="min-h-screen bg-[#0F0F11] text-white/90">
-      {/* Desktop command bar — glass sidebar */}
+      {/* Desktop command bar -- glass sidebar */}
       <aside className="border-border/60 fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-white/[0.05] bg-[#0F0F11]/80 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#0F0F11]/75 lg:flex">
         <div className="flex h-16 items-center border-b border-white/[0.06] px-6">
           <Link href="/app/dashboard" className="font-heading text-lg font-semibold tracking-tight text-gradient-heading">
@@ -137,10 +141,13 @@ export function AppShell({
           <NavLinks showAdminLink={showAdminLink} />
         </div>
         <div className="space-y-3 border-t border-white/[0.06] p-4">
-          <p className="truncate text-xs text-white/50">
-            {userName || "User"}
-            {userEmail ? <span className="block text-[10px] text-white/40">{userEmail}</span> : null}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="truncate text-xs text-white/50">
+              {userName || "User"}
+              {userEmail ? <span className="block text-[10px] text-white/40">{userEmail}</span> : null}
+            </p>
+            <NotificationBell />
+          </div>
           <Button
             variant="outline"
             className="w-full justify-start gap-2 border-white/10"
@@ -154,6 +161,7 @@ export function AppShell({
       </aside>
 
       <div className="lg:pl-72">
+        {/* Mobile header */}
         <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-white/[0.06] bg-[#0F0F11]/70 px-4 shadow-sm backdrop-blur-md lg:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
             <Button
@@ -167,8 +175,18 @@ export function AppShell({
               <Menu className="size-5" />
             </Button>
             <SheetContent side="left" className="w-72 border-white/10 bg-[#1A1A1E]/95 p-0 backdrop-blur-xl">
-              <div className="flex h-14 items-center border-b border-white/10 px-4">
+              <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
                 <span className="font-heading font-semibold text-white">Menu</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white/50 hover:text-white"
+                  type="button"
+                  onClick={closeSheet}
+                  aria-label="Close menu"
+                >
+                  Close
+                </Button>
               </div>
               <div className="p-3">
                 <nav className="flex flex-col gap-1">
@@ -178,7 +196,7 @@ export function AppShell({
                       <Link
                         key={href}
                         href={href}
-                        onClick={() => setOpen(false)}
+                        onClick={closeSheet}
                         className={cn(
                           "focus-visible:ring-purple-500/50 flex items-center gap-3 rounded-r-xl border-l-2 py-2.5 pr-3 pl-3 text-sm font-medium transition-all duration-300 focus-visible:ring-2 focus-visible:outline-none",
                           active
@@ -194,11 +212,18 @@ export function AppShell({
                 </nav>
               </div>
               <div className="space-y-2 border-t border-white/10 p-4">
+                <p className="truncate text-xs text-white/50">
+                  {userName || "User"}
+                  {userEmail ? <span className="block text-[10px] text-white/40">{userEmail}</span> : null}
+                </p>
                 <Button
                   variant="outline"
                   className="w-full justify-start gap-2"
                   type="button"
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={() => {
+                    closeSheet();
+                    signOut({ callbackUrl: "/" });
+                  }}
                 >
                   <LogOut className="size-4" />
                   Log out
@@ -207,46 +232,67 @@ export function AppShell({
             </SheetContent>
           </Sheet>
           <span className="text-caption-cerebral ml-1 normal-case">Employee</span>
+          <div className="ml-auto">
+            <NotificationBell />
+          </div>
         </header>
-        {/* Orbital offset — slightly asymmetric padding */}
-        <div className="pb-24 pl-5 pr-4 pt-6 transition-opacity duration-300 md:pl-8 md:pr-6 lg:pb-10 lg:pl-10 lg:pr-8">
+
+        {/* Content area — extra bottom padding on mobile so dock doesn't overlap content */}
+        <div
+          className="pb-28 pl-4 pr-4 pt-5 transition-opacity duration-300 sm:pl-6 sm:pr-5 md:pl-8 md:pr-6 lg:pb-10 lg:pl-10 lg:pr-8"
+          style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))" }}
+        >
           {children}
         </div>
       </div>
 
-      {/* Mobile floating dock — command bar */}
+      {/* Mobile floating dock -- always-visible quick actions */}
       <nav
-        className="pointer-events-none fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 justify-center lg:hidden"
+        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
         style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom))" }}
         aria-label="Quick navigation"
       >
-        <div className="pointer-events-auto flex max-w-md items-center justify-center gap-0.5 rounded-2xl border border-white/10 bg-[#1A1A1E]/90 px-2 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-          {dockItems.map(({ href, label, icon: Icon }) => {
-            const active = navActive(pathname, href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "focus-visible:ring-purple-500/50 flex min-w-[4.25rem] flex-col items-center gap-0.5 rounded-xl px-2 py-1 text-[10px] font-medium transition-all focus-visible:ring-2 focus-visible:outline-none",
-                  active ? "text-white" : "text-white/40 hover:text-white/75",
-                )}
-              >
-                <Icon className={cn("size-5 stroke-[1.75]", active ? "text-indigo-400" : "text-white/35")} />
-                {label}
-              </Link>
-            );
-          })}
-          <button
-            type="button"
-            className="focus-visible:ring-purple-500/50 flex min-w-[4.25rem] flex-col items-center gap-0.5 rounded-xl px-2 py-1 text-[10px] font-medium text-white/40 hover:text-white/75 focus-visible:ring-2 focus-visible:outline-none"
-            onClick={() => setOpen(true)}
-          >
-            <MoreHorizontal className="size-5 stroke-[1.75]" />
-            More
-          </button>
+        <div className="flex justify-center px-4 pt-3">
+          <div className="flex max-w-sm items-center justify-center gap-1 rounded-2xl border border-white/10 bg-[#1A1A1E]/95 px-1.5 py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.05)] backdrop-blur-xl">
+            {dockItems.map(({ href, label, icon: Icon }) => {
+              const active = navActive(pathname, href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "flex min-w-[4rem] flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[10px] font-medium transition-all duration-200 active:scale-95",
+                    active
+                      ? "bg-white/[0.08] text-white shadow-[0_0_16px_rgba(99,102,241,0.2)]"
+                      : "text-white/45 hover:bg-white/[0.05] hover:text-white/75",
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      "size-5 shrink-0 stroke-[1.75] transition-colors",
+                      active ? "text-indigo-400" : "text-white/35",
+                    )}
+                  />
+                  <span className="leading-none">{label}</span>
+                </Link>
+              );
+            })}
+
+            {/* "More" button -- opens the sheet menu */}
+            <button
+              type="button"
+              className="flex min-w-[4rem] flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[10px] font-medium text-white/45 transition-all duration-200 hover:bg-white/[0.05] hover:text-white/75 active:scale-95"
+              onClick={() => setOpen(true)}
+              aria-label="More options"
+            >
+              <MoreHorizontal className="size-5 shrink-0 stroke-[1.75] text-white/35" />
+              <span className="leading-none">More</span>
+            </button>
+          </div>
         </div>
       </nav>
+      {/* AI Coach floating chat — available on all employee pages */}
+      <AiCoachChat />
     </div>
   );
 }

@@ -647,6 +647,117 @@ export type PeopleRow = {
   isActive: boolean;
 };
 
+export type CompletionFunnel = {
+  stage: string;
+  count: number;
+};
+
+/** How many 360s are created, assigned, all-evaluators-started, completed. */
+export async function getCompletionFunnel(orgId: string, range: DateRange): Promise<CompletionFunnel[]> {
+  const [created, withEvaluators, fullyStarted, completed] = await Promise.all([
+    prisma.assessment.count({
+      where: {
+        organizationId: orgId,
+        template: { type: AssessmentTemplateType.BEHAVIORAL_360 },
+        createdAt: { gte: range.from, lte: range.to },
+      },
+    }),
+    prisma.assessment.count({
+      where: {
+        organizationId: orgId,
+        template: { type: AssessmentTemplateType.BEHAVIORAL_360 },
+        createdAt: { gte: range.from, lte: range.to },
+        evaluators: { some: {} },
+      },
+    }),
+    prisma.assessment.count({
+      where: {
+        organizationId: orgId,
+        template: { type: AssessmentTemplateType.BEHAVIORAL_360 },
+        createdAt: { gte: range.from, lte: range.to },
+        evaluators: { every: { status: { in: [EvaluatorStatus.IN_PROGRESS, EvaluatorStatus.COMPLETED] } } },
+      },
+    }),
+    prisma.assessment.count({
+      where: {
+        organizationId: orgId,
+        template: { type: AssessmentTemplateType.BEHAVIORAL_360 },
+        status: AssessmentInstanceStatus.COMPLETED,
+        updatedAt: { gte: range.from, lte: range.to },
+      },
+    }),
+  ]);
+
+  return [
+    { stage: "Created", count: created },
+    { stage: "Evaluators assigned", count: withEvaluators },
+    { stage: "All evaluators started", count: fullyStarted },
+    { stage: "Completed", count: completed },
+  ];
+}
+
+export type WeeklyCompetency = {
+  key: string;
+  week: string;
+  avg: number;
+  count: number;
+};
+
+/** Weekly avg othersAverage grouped by competency for the last 12 weeks. */
+export async function getWeeklyCompetencyTrends(orgId: string, range: DateRange): Promise<{
+  competencies: string[];
+  series: Record<string, { week: string; avg: number }[]>;
+}> {
+  const snapshots = await prisma.competencyScoreSnapshot.findMany({
+    where: {
+      organizationId: orgId,
+      recordedAt: { gte: range.from, lte: range.to },
+    },
+    select: { competencyKey: true, othersAverage: true, recordedAt: true },
+  });
+
+  const bucket = new Map<string, Map<string, { sum: number; n: number }>>();
+  const compSet = new Set<string>();
+  const weekSet = new Set<string>();
+
+  // ISO week label (e.g. "2026-W05")
+  function weekLabel(d: Date): string {
+    const now = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = (now.getDay() + 6) % 7; // Monday=0
+    now.setDate(now.getDate() - dayNum + 3);
+    const firstThu = new Date(Date.UTC(now.getUTCFullYear(), 0, 4));
+    const weekNum = 1 + Math.round(((+now - +firstThu) / 86400000 - 3 + ((firstThu.getDay() + 6) % 7)) / 7);
+    return `${firstThu.getUTCFullYear()}-W${weekNum.toString().padStart(2, "0")}`;
+  }
+
+  for (const s of snapshots) {
+    const wk = weekLabel(new Date(s.recordedAt));
+    compSet.add(s.competencyKey);
+    weekSet.add(wk);
+    const inner = bucket.get(s.competencyKey) ?? new Map<string, { sum: number; n: number }>();
+    const cur = inner.get(wk) ?? { sum: 0, n: 0 };
+    cur.sum += s.othersAverage;
+    cur.n += 1;
+    inner.set(wk, cur);
+    bucket.set(s.competencyKey, inner);
+  }
+
+  const weeks = [...weekSet].sort();
+  const competencies = [...compSet].sort();
+  const series: Record<string, { week: string; avg: number }[]> = {};
+
+  for (const ck of competencies) {
+    const inner = bucket.get(ck);
+    if (!inner) continue;
+    series[ck] = weeks.map((w) => {
+      const v = inner.get(w);
+      return { week: w, avg: v && v.n > 0 ? Math.round((v.sum / v.n) * 100) / 100 : 0 };
+    });
+  }
+
+  return { competencies, series };
+}
+
 export async function getPeopleDirectory(orgId: string): Promise<PeopleRow[]> {
   const members = await prisma.organizationMember.findMany({
     where: { organizationId: orgId },

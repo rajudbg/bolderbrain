@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { generateCacheKey } from "./cache";
 import { generateSmartActions } from "./actions";
 import { generateWithFallback } from "./resilient-generator";
+import { createNotification } from "@/lib/notifications";
+import { NotificationType } from "@/generated/prisma/enums";
 
 const INSIGHT_SYSTEM_PROMPT = `You are a senior HR consultant writing 360 feedback insights. 
 
@@ -101,7 +103,7 @@ Classify the pattern and write the insight.`;
     result.success && result.content.trim().length > 0 ? result.content : fallback();
 
   const fromAi =
-    result.success && (result.source === "AI_NEMOTRON" || result.source === "CACHED");
+    result.success && (result.source === "AI_GENERATED" || result.source === "AI_NEMOTRON" || result.source === "CACHED");
 
   return {
     finalText,
@@ -177,5 +179,14 @@ export async function generateAndPersist360AIInsight(input: {
       aiError: insight.error,
       smartActionsJson: smartActionsJson ?? undefined,
     },
+  });
+
+  // Notify the employee that their 360 results are ready
+  void createNotification({
+    userId: input.userId,
+    type: NotificationType.RESULTS_READY_360,
+    title: "Your 360 results are ready",
+    body: `Your latest 360 feedback has been processed. Your top strength is ${flat.highestCompetency} and your growth area is ${flat.lowestCompetency}.`,
+    href: "/app/dashboard",
   });
 }
