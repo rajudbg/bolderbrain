@@ -465,6 +465,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
 
+  // 10 requests per minute max for AI Coach
+  const { checkRateLimit } = await import("@/lib/api-rate-limit");
+  if (!checkRateLimit(`ai-coach:${session.user.id}`, 10, 60_000)) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  }
+
+
   const context = await loadCoachContext(session.user.id, session.user.name ?? null, session.user.tenants);
   const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
   const historyText = history

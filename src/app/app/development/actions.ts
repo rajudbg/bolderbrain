@@ -114,6 +114,12 @@ export async function generateMyDevPlan(): Promise<{ planText: string; source: s
 
   const userId = session.user.id;
 
+  const { checkRateLimit } = await import("@/lib/api-rate-limit");
+  if (!checkRateLimit(`dev-plan:${userId}`, 5, 60_000)) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+
+
   const member = await prisma.organizationMember.findFirst({
     where: { userId },
     include: { organization: { select: { name: true } } },
