@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDefaultPostLoginPath } from "@/lib/post-login-redirect";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 /** After credentials sign-in, client `getSession()` is often stale (missing tenants). Read from API with backoff. */
 async function readSessionAfterSignIn(): Promise<Session | null> {
@@ -207,9 +208,14 @@ export function LoginForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-white/80">
-                Password
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-white/80">
+                  Password
+                </Label>
+                <Link href="/forgot-password" className="text-xs font-medium text-indigo-400 hover:text-indigo-300">
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"

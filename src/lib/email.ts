@@ -288,3 +288,44 @@ export async function notifyDemoRequest(input: {
 
   console.log("[demo request]", { to, subject, text });
 }
+
+export async function sendPasswordResetEmail(email: string, token: string): Promise<void> {
+  const url = `${appOrigin()}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+  const subject = `Reset your BolderBrain password`;
+  const text = [
+    `Hello,`,
+    ``,
+    `You requested to reset your password or set up your account on BolderBrain.`,
+    ``,
+    `Click the link below to set a new password:`,
+    url,
+    ``,
+    `If you did not request this, you can safely ignore this email.`,
+  ].join("\n");
+
+  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM,
+          to: [email],
+          subject,
+          text,
+        }),
+      });
+      if (!res.ok) {
+        console.error("[email] Resend error", res.status, await res.text());
+      }
+    } catch (e) {
+      console.error("[email] Resend failed", e);
+    }
+    return;
+  }
+
+  console.log("[email stub]", { to: email, subject, text });
+}
