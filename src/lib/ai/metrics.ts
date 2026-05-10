@@ -25,9 +25,10 @@ export type AIMetrics = {
 export async function getAIMetrics(): Promise<AIMetrics> {
   const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const [totalInsights, aiSuccess, ruleFallback, cachedCount, avgGenerationTime, userRatings] =
+  const [totalInsights, aiGenerated, legacyAiGenerated, ruleFallback, cachedCount, avgGenerationTime, userRatings] =
     await Promise.all([
       prisma.aIInsight.count({ where: { createdAt: { gte: last24h } } }),
+      prisma.aIInsight.count({ where: { createdAt: { gte: last24h }, source: "AI_GENERATED" } }),
       prisma.aIInsight.count({ where: { createdAt: { gte: last24h }, source: "AI_NEMOTRON" } }),
       prisma.aIInsight.count({ where: { createdAt: { gte: last24h }, source: "RULE_BASED" } }),
       prisma.aIInsight.count({ where: { createdAt: { gte: last24h }, source: "CACHED" } }),
@@ -46,7 +47,7 @@ export async function getAIMetrics(): Promise<AIMetrics> {
 
   return {
     totalInsights,
-    aiSuccessRate: totalInsights > 0 ? ((aiSuccess + cachedCount) / totalInsights) * 100 : 0,
+    aiSuccessRate: totalInsights > 0 ? ((aiGenerated + legacyAiGenerated + cachedCount) / totalInsights) * 100 : 0,
     fallbackRate: totalInsights > 0 ? (ruleFallback / totalInsights) * 100 : 0,
     cacheHitRate: totalInsights > 0 ? (cachedCount / totalInsights) * 100 : 0,
     averageLatencyMs: Math.round(avgMs ?? 0),

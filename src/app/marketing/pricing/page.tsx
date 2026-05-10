@@ -1,15 +1,57 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import { motion } from "framer-motion";
 import { Check, Sparkles, Building2, Users, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+const RAZORPAY_TEST_KEY_ID = "rzp_test_tXcOz47WMwAJRt";
+type RazorpayPlanKey = "starter" | "professional";
+
+type RazorpayOrderResponse = {
+  ok: boolean;
+  error?: string;
+  keyId?: string;
+  orderId?: string;
+  amount?: number;
+  currency?: string;
+  name?: string;
+  description?: string;
+};
+
+type RazorpaySuccessResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpaySuccessResponse) => void;
+  theme: { color: string };
+  modal: { ondismiss: () => void };
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => { open: () => void };
+  }
+}
 
 const plans = [
   {
+    key: "starter" as const,
     name: "Starter",
     icon: Users,
-    price: "$5",
+    price: "₹499",
     period: "per employee / month",
     description: "Perfect for small teams getting started with people analytics.",
     features: [
@@ -20,14 +62,16 @@ const plans = [
       "Email support",
       "Standard analytics dashboard",
     ],
-    cta: "Start Free Trial",
-    href: "/demo",
+    cta: "Pay with Razorpay",
+    href: "/marketing/demo",
+    paymentPlanKey: "starter" as RazorpayPlanKey,
     popular: false,
   },
   {
+    key: "professional" as const,
     name: "Professional",
     icon: Sparkles,
-    price: "$12",
+    price: "₹999",
     period: "per employee / month",
     description: "Advanced insights and AI features for growing organizations.",
     features: [
@@ -41,11 +85,13 @@ const plans = [
       "Priority support",
       "API access",
     ],
-    cta: "Start Free Trial",
-    href: "/demo",
+    cta: "Pay with Razorpay",
+    href: "/marketing/demo",
+    paymentPlanKey: "professional" as RazorpayPlanKey,
     popular: true,
   },
   {
+    key: "enterprise" as const,
     name: "Enterprise",
     icon: Building2,
     price: "Custom",
@@ -63,7 +109,8 @@ const plans = [
       "On-premise deployment option",
     ],
     cta: "Contact Sales",
-    href: "/demo",
+    href: "/marketing/demo",
+    paymentPlanKey: null,
     popular: false,
   },
 ];
@@ -79,17 +126,107 @@ const faqs = [
   },
   {
     q: "Is there a free trial?",
-    a: "Yes, all plans include a 14-day free trial with full access to features. No credit card required.",
+    a: "Yes, we can activate a pilot workspace after the demo so your team can validate the workflow before a full rollout.",
   },
   {
     q: "What payment methods do you accept?",
-    a: "We accept all major credit cards, ACH transfers, and can arrange annual invoicing for Enterprise customers.",
+    a: "Online payments are powered by Razorpay in test mode. Enterprise customers can still use annual invoicing.",
   },
   {
     q: "Can I export my data?",
     a: "Absolutely. Your data belongs to you. Export reports, raw responses, and analytics anytime in CSV or JSON format.",
   },
 ];
+
+function RazorpayCheckoutButton({
+  planKey,
+  label,
+  popular,
+}: {
+  planKey: RazorpayPlanKey;
+  label: string;
+  popular: boolean;
+}) {
+  const [pending, setPending] = useState(false);
+  const [scriptReady, setScriptReady] = useState(false);
+
+  async function startCheckout() {
+    if (!scriptReady || !window.Razorpay) {
+      toast.error("Payment checkout is still loading. Please try again in a moment.");
+      return;
+    }
+
+    setPending(true);
+    try {
+      const res = await fetch("/api/payments/razorpay/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planKey }),
+      });
+      const order = (await res.json().catch(() => null)) as RazorpayOrderResponse | null;
+      if (!res.ok || !order?.ok || !order.orderId || !order.amount || !order.currency) {
+        throw new Error(order?.error || "Could not start Razorpay checkout.");
+      }
+
+      const checkout = new window.Razorpay({
+        key: order.keyId || RAZORPAY_TEST_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: order.name || "BolderBrain",
+        description: order.description || "BolderBrain subscription",
+        order_id: order.orderId,
+        theme: { color: "#6366f1" },
+        modal: {
+          ondismiss: () => setPending(false),
+        },
+        handler: async (response) => {
+          const verifyRes = await fetch("/api/payments/razorpay/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...response, planKey }),
+          });
+          const verified = (await verifyRes.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+          setPending(false);
+          if (!verifyRes.ok || !verified?.ok) {
+            toast.error(verified?.error || "Payment could not be verified.");
+            return;
+          }
+          toast.success("Payment verified. We will activate your workspace next.");
+        },
+      });
+
+      checkout.open();
+    } catch (err) {
+      setPending(false);
+      toast.error(err instanceof Error ? err.message : "Could not start Razorpay checkout.");
+    }
+  }
+
+  return (
+    <>
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="afterInteractive"
+        onLoad={() => setScriptReady(true)}
+      />
+      <button
+        type="button"
+        onClick={startCheckout}
+        disabled={pending}
+        className={cn(
+          "flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all",
+          popular
+            ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-400 hover:to-purple-500"
+            : "bg-white/10 text-white hover:bg-white/20",
+          "disabled:cursor-not-allowed disabled:opacity-70"
+        )}
+      >
+        {pending ? "Opening checkout..." : label}
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </>
+  );
+}
 
 export default function PricingPage() {
   return (
@@ -170,18 +307,26 @@ export default function PricingPage() {
               </div>
 
               <div className="p-8 pt-0">
-                <Link
-                  href={plan.href}
-                  className={cn(
-                    "flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold transition-all",
-                    plan.popular
-                      ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-400 hover:to-purple-500"
-                      : "bg-white/10 text-white hover:bg-white/20"
-                  )}
-                >
-                  {plan.cta}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
+                {plan.paymentPlanKey ? (
+                  <RazorpayCheckoutButton
+                    planKey={plan.paymentPlanKey}
+                    label={plan.cta}
+                    popular={plan.popular}
+                  />
+                ) : (
+                  <Link
+                    href={plan.href}
+                    className={cn(
+                      "flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all",
+                      plan.popular
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-400 hover:to-purple-500"
+                        : "bg-white/10 text-white hover:bg-white/20"
+                    )}
+                  >
+                    {plan.cta}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
               </div>
             </motion.div>
           ))}

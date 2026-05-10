@@ -55,7 +55,11 @@ export function MyActionsClient({
   async function onComplete(id: string) {
     setBusy(true);
     try {
-      await completeMyUserAction(id);
+      const result = await completeMyUserAction(id);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
       toast.success("Nice work — marked complete.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
@@ -71,10 +75,30 @@ export function MyActionsClient({
     }
     setBusy(true);
     try {
-      await dismissMyUserAction({ userActionId: dismissId, reason: dismissReason.trim() });
+      const result = await dismissMyUserAction({ userActionId: dismissId, reason: dismissReason.trim() });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
       toast.success("Action dismissed");
       setDismissId(null);
       setDismissReason("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onStart(id: string) {
+    setBusy(true);
+    try {
+      const result = await startMyUserAction(id);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Action started");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     } finally {
@@ -136,7 +160,7 @@ export function MyActionsClient({
                         size="sm"
                         variant="outline"
                         disabled={busy}
-                        onClick={() => void startMyUserAction(a.id)}
+                        onClick={() => void onStart(a.id)}
                       >
                         Start
                       </Button>

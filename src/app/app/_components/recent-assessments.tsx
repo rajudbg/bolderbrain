@@ -19,8 +19,8 @@ export function RecentAssessmentsWidget({ rows }: { rows: DashboardAssessmentRow
   return (
     <Card className="border-border/60 shadow-sm">
       <CardHeader>
-        <CardTitle className="text-lg">Recent 360 activity</CardTitle>
-        <CardDescription>Completed and in-progress feedback cycles.</CardDescription>
+        <CardTitle className="text-lg">Recent assessments</CardTitle>
+        <CardDescription>Completed and in-progress feedback cycles and personal assessments.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {rows.length === 0 ? (

@@ -20,6 +20,41 @@ const create360AdminSchema = z.object({
   peerUserIds: z.array(z.string().min(1)).default([]),
 });
 
+const rosterRoleSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .optional()
+  .transform((value) => {
+    if (value === "ADMIN") return OrganizationRole.ADMIN;
+    if (value === "SUPER_ADMIN") return OrganizationRole.SUPER_ADMIN;
+    return OrganizationRole.EMPLOYEE;
+  });
+
+const rosterRowSchema = z.object({
+  email: z.string().trim().email(),
+  name: z.string().trim().max(120).optional(),
+  department: z.string().trim().max(120).optional(),
+  role: rosterRoleSchema,
+});
+
+function parseRosterCsv(csv: string) {
+  const lines = csv
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const rows = lines[0]?.toLowerCase().startsWith("email,") ? lines.slice(1) : lines;
+  return rows.map((line, index) => {
+    const [email = "", name = "", department = "", role = ""] = line.split(",").map((cell) => cell.trim());
+    const parsed = rosterRowSchema.safeParse({ email, name, department, role });
+    if (!parsed.success) {
+      throw new Error(`Row ${index + 1}: enter email,name,department,role with a valid email.`);
+    }
+    return parsed.data;
+  });
+}
+
 /** Create a behavioral 360 from HR admin routes (uses current admin org cookie). */
 export async function createAssessment360Admin(input: z.infer<typeof create360AdminSchema>) {
   const data = create360AdminSchema.parse(input);
@@ -66,6 +101,67 @@ export async function updateMemberDepartment(userId: string, department: string 
   });
   revalidatePath("/admin/people");
   revalidatePath("/admin");
+}
+
+export async function importPeopleRoster(csv: string) {
+  const orgId = await requireAdminOrganizationId();
+  const rows = parseRosterCsv(csv);
+  if (rows.length === 0) {
+    throw new Error("Paste at least one CSV row.");
+  }
+  if (rows.length > 200) {
+    throw new Error("Import up to 200 rows at a time.");
+  }
+
+  let createdUsers = 0;
+  let updatedMembers = 0;
+
+  for (const row of rows) {
+    const existing = await prisma.user.findUnique({
+      where: { email: row.email.toLowerCase() },
+      select: { id: true },
+    });
+
+    const user =
+      existing ??
+      (await prisma.user.create({
+        data: {
+          email: row.email.toLowerCase(),
+          name: row.name || null,
+          isActive: false,
+        },
+        select: { id: true },
+      }));
+
+    if (!existing) createdUsers += 1;
+
+    await prisma.organizationMember.upsert({
+      where: {
+        userId_organizationId: {
+          userId: user.id,
+          organizationId: orgId,
+        },
+      },
+      create: {
+        userId: user.id,
+        organizationId: orgId,
+        role: row.role,
+        department: row.department || null,
+      },
+      update: {
+        role: row.role,
+        department: row.department || null,
+      },
+    });
+    updatedMembers += 1;
+  }
+
+  revalidatePath("/admin/people");
+  return {
+    createdUsers,
+    updatedMembers,
+    message: `Imported ${updatedMembers} roster row(s). ${createdUsers} new user account(s) were created inactive until credentials are provisioned.`,
+  };
 }
 
 export async function send360Reminder(assessmentId: string) {

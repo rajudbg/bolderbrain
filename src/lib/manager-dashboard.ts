@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { listAdminTenants, resolveAdminOrganizationId } from "@/lib/admin/context";
 import { AssessmentTemplateType, UserActionStatus } from "@/generated/prisma/enums";
 
 export type TeamMemberRow = {
@@ -47,19 +48,25 @@ export async function getManagerTeamPayload(): Promise<TeamDashboardPayload | nu
   if (!session?.user?.id) return null;
 
   const userId = session.user.id;
+  const adminTenants = listAdminTenants(session.user.tenants);
+  if (adminTenants.length === 0) return null;
 
-  // Get user's organization membership with department
+  const organizationId = await resolveAdminOrganizationId();
+  if (!organizationId || !adminTenants.some((tenant) => tenant.organizationId === organizationId)) {
+    return null;
+  }
+
   const myMembership = await prisma.organizationMember.findFirst({
-    where: { userId },
+    where: { userId, organizationId },
     include: { organization: { select: { id: true, name: true } } },
   });
 
   if (!myMembership) return null;
 
-  const { department, organizationId } = myMembership;
+  const { department } = myMembership;
   const orgName = myMembership.organization.name;
 
-  // Find team members (same department, or if no department set, all org members)
+  // Until explicit manager relationships exist, restrict this aggregate view to org admins.
   const whereClause = department
     ? { organizationId, department, userId: { not: userId } }
     : { organizationId, userId: { not: userId } };

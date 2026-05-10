@@ -4,6 +4,11 @@ import { requireAdminOrganizationId } from "@/lib/admin/context";
 import prisma from "@/lib/prisma";
 import { UsageMiniChart } from "../_components/usage-mini-chart";
 
+function assessmentUnitCostUsd() {
+  const value = Number(process.env.ASSESSMENT_UNIT_COST_USD ?? "12");
+  return Number.isFinite(value) && value >= 0 ? value : 12;
+}
+
 export default async function UsagePage() {
   const orgId = await requireAdminOrganizationId();
   const range = defaultDateRange();
@@ -18,8 +23,8 @@ export default async function UsagePage() {
 
   const headcount = await prisma.organizationMember.count({ where: { organizationId: orgId } });
 
-  const mockCostPerAssessment = 12;
-  const totalCost = d.total * mockCostPerAssessment;
+  const costPerAssessment = assessmentUnitCostUsd();
+  const totalCost = d.total * costPerAssessment;
   const costPerEmployee = headcount > 0 ? Math.round((totalCost / headcount) * 100) / 100 : 0;
 
   return (
@@ -28,7 +33,7 @@ export default async function UsagePage() {
         <p className="text-muted-foreground text-sm font-medium uppercase tracking-wide">Adoption</p>
         <h1 className="text-3xl font-semibold tracking-tight">Assessment usage</h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-          Completed assessments in the last 90 days. Cost figures use placeholder unit economics.
+          Completed assessments in the last 90 days. Cost figures use your configured assessment unit cost.
         </p>
       </header>
 
@@ -44,15 +49,15 @@ export default async function UsagePage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Cost / ROI (mock)</CardTitle>
-            <CardDescription>Replace with your finance data</CardDescription>
+            <CardTitle>Cost / ROI</CardTitle>
+            <CardDescription>Configured via ASSESSMENT_UNIT_COST_USD</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>
               <strong>Total completions:</strong> {d.total}
             </p>
             <p>
-              <strong>Assumed avg cost / assessment:</strong> ${mockCostPerAssessment}
+              <strong>Configured avg cost / assessment:</strong> ${costPerAssessment}
             </p>
             <p>
               <strong>Implied spend (window):</strong> ${totalCost}
@@ -61,7 +66,7 @@ export default async function UsagePage() {
               <strong>Cost per employee (roster):</strong> ${costPerEmployee}
             </p>
             <p className="text-muted-foreground text-xs">
-              Insights generated per dollar: tie to completed actions + reports exported (instrument later).
+              Use this as a finance baseline; completed actions and report exports can be compared against this spend.
             </p>
           </CardContent>
         </Card>

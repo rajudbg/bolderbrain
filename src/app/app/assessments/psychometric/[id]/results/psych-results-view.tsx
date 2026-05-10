@@ -228,7 +228,7 @@ export function PsychResultsView({
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Role fit (optional)</CardTitle>
-              <CardDescription>Compared to template "ideal" profiles — illustrative only.</CardDescription>
+              <CardDescription>Compared to template &quot;ideal&quot; profiles — illustrative only.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               {roleProfileKeys.map((k) => (

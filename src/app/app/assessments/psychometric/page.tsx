@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { listPsychTemplatesForUser } from "./actions";
 import { PsychStartClient } from "./psych-start-client";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 export default async function PsychAssessmentsPage({
   searchParams,
@@ -12,6 +14,9 @@ export default async function PsychAssessmentsPage({
   return (
     <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 lg:px-8">
       <header className="space-y-2">
+        <Link href="/assessments" className={buttonVariants({ variant: "ghost", size: "sm" }) + " -ml-2 mb-1 text-white/50 hover:text-white/80"}>
+          ← All assessments
+        </Link>
         <p className="text-sm font-medium tracking-wide text-violet-700 uppercase dark:text-violet-400">
           Personality (Big Five)
         </p>

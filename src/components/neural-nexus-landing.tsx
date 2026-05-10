@@ -9,7 +9,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Building2, Shield, Users } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,18 @@ const ORG_HREF = "/auth/login?portal=organization&callbackUrl=%2Fadmin";
 const SUPER_ADMIN_LOGIN_HREF = "/auth/login?portal=super&callbackUrl=%2Fsuper-admin";
 
 type PortalKey = "employees" | "organization" | "super";
+
+function subscribeToHydration() {
+  return () => {};
+}
+
+function getClientHydrationSnapshot() {
+  return true;
+}
+
+function getServerHydrationSnapshot() {
+  return false;
+}
 
 function NexusParticles({ reduced }: { reduced: boolean }) {
   const dots = useMemo(
@@ -88,10 +100,11 @@ function NeuralConnections() {
 export function NeuralNexusLanding() {
   const { data: session, status } = useSession();
   const prefersReducedMotion = useReducedMotion();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  );
   /** Match SSR + first client paint: session and prefers-reduced-motion differ after hydration if applied immediately. */
   const reduceMotion = mounted && Boolean(prefersReducedMotion);
   const [hover, setHover] = useState<PortalKey | null>(null);

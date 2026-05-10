@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requirePlatformSuperAdmin } from "@/lib/super-admin-auth";
+import { SuperAdminMobileMenu } from "./_components/super-admin-mobile-menu";
 import { SuperAdminNav } from "./_components/super-admin-nav";
 import { SignOutButton } from "./_components/sign-out-button";
 
@@ -31,6 +32,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
       <div className="lg:pl-72">
         {/* Mobile header */}
         <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-white/[0.06] bg-[#0F0F11]/75 px-4 shadow-sm backdrop-blur-md lg:hidden">
+          <SuperAdminMobileMenu />
           <span className="text-caption-cerebral normal-case">Super Admin</span>
         </header>
         

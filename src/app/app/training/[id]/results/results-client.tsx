@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import {
   Radar,
   RadarChart,
@@ -44,11 +44,10 @@ export function TrainingResultsClient({
   return (
     <div className="space-y-8">
       <Link
-        href="/app/training"
-        className="inline-flex items-center gap-2 text-sm text-white/55 hover:text-white/90"
+        href="/app/dashboard"
+        className="flex items-center gap-1 text-sm text-white/50 hover:text-white/80"
       >
-        <ArrowLeft className="size-4" />
-        My learning
+        ← Dashboard
       </Link>
 
       <div>

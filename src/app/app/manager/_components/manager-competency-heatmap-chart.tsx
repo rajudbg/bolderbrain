@@ -15,7 +15,7 @@ function EmptyState() {
     <div className="flex h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-10 text-center">
       <p className="text-sm font-medium text-white/70">No team competency snapshots yet</p>
       <p className="mt-1 max-w-md text-xs text-white/45">
-        When your direct reports complete 360 feedback, per-competency scores appear here as a team average.
+        When people in this view complete 360 feedback, per-competency scores appear here as a team average.
       </p>
     </div>
   );

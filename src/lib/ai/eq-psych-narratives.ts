@@ -26,7 +26,7 @@ export type EqNarrativeInput = {
 };
 
 function eqRuleBasedNarrative(input: EqNarrativeInput): string {
-  const { highestDomain, lowestDomain, compositeScore, percentileComposite, quadrantLabel } = input;
+  const { highestDomain, lowestDomain, compositeScore, percentileComposite } = input;
   const pctText = `~${percentileComposite.toFixed(0)}th percentile`;
   const strengthLabel = highestDomain.replace(/([A-Z])/g, " $1").trim();
   const growthLabel = lowestDomain.replace(/([A-Z])/g, " $1").trim();

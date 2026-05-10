@@ -39,8 +39,8 @@ export function DashboardAnalyticsCharts({
       {showMix ? (
         <Card className="border-border/60 overflow-hidden">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">360 activity</CardTitle>
-            <CardDescription>Your recent feedback cycles by status (subject + evaluator roles).</CardDescription>
+            <CardTitle className="text-base">Assessment activity</CardTitle>
+            <CardDescription>Your recent assessments by status (all types).</CardDescription>
           </CardHeader>
           <CardContent className="h-[260px] pt-2">
             <ResponsiveContainer width="100%" height="100%">

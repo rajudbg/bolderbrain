@@ -70,7 +70,6 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -88,9 +87,16 @@ export function NotificationBell() {
 
   // Poll every 60s and on mount
   useEffect(() => {
-    void fetchNotifications();
-    const id = setInterval(() => void fetchNotifications(), 60_000);
-    return () => clearInterval(id);
+    const timeoutId = window.setTimeout(() => {
+      void fetchNotifications();
+    }, 0);
+    const intervalId = window.setInterval(() => {
+      void fetchNotifications();
+    }, 60_000);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
   }, [fetchNotifications]);
 
   // Close on outside click
@@ -121,7 +127,11 @@ export function NotificationBell() {
 
   async function handleDismiss(id: string, e: React.MouseEvent) {
     e.stopPropagation();
+    const removed = notifications.find((notification) => notification.id === id);
     setNotifications((n) => n.filter((x) => x.id !== id));
+    if (removed && !removed.isRead) {
+      setUnreadCount((count) => Math.max(0, count - 1));
+    }
     await fetch("/api/app/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -202,6 +212,7 @@ export function NotificationBell() {
                   type="button"
                   onClick={async () => {
                     setNotifications([]);
+                    setUnreadCount(0);
                     await fetch("/api/app/notifications", {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
@@ -221,7 +232,7 @@ export function NotificationBell() {
               className="max-h-[min(400px,60dvh)] overflow-y-auto"
               style={{ scrollbarWidth: "none" }}
             >
-              {notifications.length === 0 ? (
+              {visible.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-12 text-center">
                   <div className="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
                     <Bell className="size-6 text-white/20" />
@@ -233,7 +244,7 @@ export function NotificationBell() {
                 </div>
               ) : (
                 <ul className="divide-y divide-white/[0.05]">
-                  {notifications.map((notif) => {
+                  {visible.map((notif) => {
                     const Icon = typeIcon(notif.type);
                     const gradient = typeColor(notif.type);
                     return (

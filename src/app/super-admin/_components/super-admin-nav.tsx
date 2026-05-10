@@ -16,7 +16,7 @@ const links = [
   { href: "/super-admin/development", label: "Development", icon: Sparkles },
 ];
 
-export function SuperAdminNav() {
+export function SuperAdminNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <div className="flex h-full flex-col gap-6">
@@ -39,6 +39,7 @@ export function SuperAdminNav() {
             <Link
               key={href}
               href={href}
+              onClick={onNavigate}
               className={cn(
                 "focus-visible:ring-purple-500/50 flex items-center gap-2 rounded-r-xl border-l-2 py-2.5 pr-3 pl-3 text-sm font-medium transition-all duration-300 focus-visible:ring-2 focus-visible:outline-none",
                 activeResolved

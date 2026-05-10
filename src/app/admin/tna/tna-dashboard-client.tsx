@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Sparkles, X, Loader2, Lightbulb, Target, Clock, BookOpen, ArrowRight } from "lucide-react";
+import { Sparkles, Loader2, Lightbulb, Target, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -186,7 +186,7 @@ export function TnaDashboardClient(props: {
         gap,
         isLoading: false,
       });
-    } catch (error) {
+    } catch {
       toast.error("Failed to get AI recommendation");
       setAiModalOpen(false);
       setAiRecommendation(null);

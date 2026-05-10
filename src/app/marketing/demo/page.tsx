@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Building2,
   Users,
-  Mail,
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,6 +34,8 @@ const benefits = [
 
 export default function DemoPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -43,9 +44,27 @@ export default function DemoPage() {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setPending(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/marketing/demo-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error || "We could not send your request. Please try again.");
+      }
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "We could not send your request. Please try again.");
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
@@ -235,23 +254,27 @@ export default function DemoPage() {
 
                   <button
                     type="submit"
+                    disabled={pending}
                     className={cn(
                       "w-full flex items-center justify-center gap-2 py-4 rounded-xl",
                       "bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold",
                       "hover:from-indigo-400 hover:to-purple-500 transition-all",
-                      "shadow-lg shadow-indigo-500/25"
+                      "shadow-lg shadow-indigo-500/25",
+                      "disabled:cursor-not-allowed disabled:opacity-70"
                     )}
                   >
                     <Calendar className="h-5 w-5" />
-                    Schedule Demo
+                    {pending ? "Sending..." : "Schedule Demo"}
                   </button>
 
-                  <p className="text-xs text-white/40 text-center">
-                    By submitting, you agree to our{" "}
-                    <Link href="#" className="text-indigo-400 hover:underline">
-                      Privacy Policy
-                    </Link>
-                    .
+                  {error ? (
+                    <p className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                      {error}
+                    </p>
+                  ) : null}
+
+                  <p className="text-center text-xs text-white/40">
+                    By submitting, you agree to be contacted about BolderBrain.
                   </p>
                 </div>
               </form>

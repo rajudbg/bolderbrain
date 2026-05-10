@@ -105,6 +105,20 @@ export default auth(async (req) => {
     return NextResponse.next();
   }
 
+  if (pathname === "/app/manager" || pathname.startsWith("/app/manager/")) {
+    if (!req.auth?.user) {
+      const login = new URL("/login", req.url);
+      login.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(login);
+    }
+    const tenants = await tenantClaimsForMiddleware(req);
+    const canManageOrg = tenants.some((t) => t.role === "ADMIN" || t.role === "SUPER_ADMIN");
+    if (!canManageOrg) {
+      return NextResponse.redirect(new URL("/app/dashboard", req.url));
+    }
+    return NextResponse.next();
+  }
+
   if (pathname.startsWith("/app") || pathname.startsWith("/assessments") || pathname.startsWith("/org")) {
     if (!req.auth?.user) {
       const login = new URL("/login", req.url);

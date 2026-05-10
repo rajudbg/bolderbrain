@@ -237,3 +237,54 @@ export async function notifyTrainingProgramReminderAi(input: {
 
   console.log("[email stub]", { to, subject: input.subject, text });
 }
+
+export async function notifyDemoRequest(input: {
+  name: string;
+  email: string;
+  company: string;
+  size: string;
+  message?: string | null;
+}): Promise<void> {
+  const to = process.env.DEMO_REQUEST_TO?.trim() || process.env.EMAIL_FROM?.trim();
+  if (!to) {
+    console.log("[demo request]", input);
+    return;
+  }
+
+  const subject = `Demo request: ${input.company}`;
+  const text = [
+    `Name: ${input.name}`,
+    `Email: ${input.email}`,
+    `Company: ${input.company}`,
+    `Team size: ${input.size}`,
+    ``,
+    `Message:`,
+    input.message?.trim() || "No message provided.",
+  ].join("\n");
+
+  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM,
+          to: [to],
+          subject,
+          text,
+        }),
+      });
+      if (!res.ok) {
+        console.error("[email] Resend error", res.status, await res.text());
+      }
+    } catch (e) {
+      console.error("[email] Resend failed", e);
+    }
+    return;
+  }
+
+  console.log("[demo request]", { to, subject, text });
+}

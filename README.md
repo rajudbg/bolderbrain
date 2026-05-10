@@ -80,6 +80,8 @@ npm run dev
 | `POST /api/auth/*` | Auth.js (login rate limit: 5 attempts / 15 min per IP in `authorize`). |
 | Other `/api/*` | 100 requests / minute per user (or IP if anonymous), excluding `/api/auth` and `/api/health`. |
 
+For VPS deployment with CloudPanel, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Main API surface (server actions)
 
 The app uses **server actions** more than REST. Important entry points:

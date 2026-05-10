@@ -145,7 +145,7 @@ export async function getEmployeeDashboardPayload() {
     });
   }
 
-  const [asSubject, asEvaluator] = await Promise.all([
+  const [asSubject, asEvaluator, asIq, asEq, asPsych] = await Promise.all([
     prisma.assessment.findMany({
       where: {
         subjectUserId: userId,
@@ -177,6 +177,36 @@ export async function getEmployeeDashboardPayload() {
       },
       orderBy: { updatedAt: "desc" },
       take: 12,
+    }),
+    prisma.iqTestAttempt.findMany({
+      where: { userId },
+      include: {
+        organization: { select: { name: true, slug: true } },
+        template: { select: { name: true } },
+        result: { select: { id: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 6,
+    }),
+    prisma.eqTestAttempt.findMany({
+      where: { userId },
+      include: {
+        organization: { select: { name: true, slug: true } },
+        template: { select: { name: true } },
+        result: { select: { id: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 6,
+    }),
+    prisma.psychTestAttempt.findMany({
+      where: { userId },
+      include: {
+        organization: { select: { name: true, slug: true } },
+        template: { select: { name: true } },
+        result: { select: { id: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 6,
     }),
   ]);
 
@@ -218,6 +248,29 @@ export async function getEmployeeDashboardPayload() {
       takeUrl: `/assessments/${ev.id}`,
       updatedAt: ev.updatedAt.toISOString(),
     });
+  }
+
+  const selfAdministered = [
+    { items: asIq, path: "iq" },
+    { items: asEq, path: "eq" },
+    { items: asPsych, path: "psychometric" },
+  ];
+
+  for (const group of selfAdministered) {
+    for (const item of group.items) {
+      const hasResult = Boolean(item.result);
+      recent.push({
+        id: item.id,
+        title: item.template.name,
+        orgName: item.organization.name,
+        orgSlug: item.organization.slug,
+        role: "subject",
+        statusLabel: hasResult ? "Completed" : "In progress",
+        resultUrl: hasResult ? `/app/assessments/${group.path}/${item.id}/results` : null,
+        takeUrl: !hasResult ? `/app/assessments/${group.path}/${item.id}` : null,
+        updatedAt: item.updatedAt.toISOString(),
+      });
+    }
   }
 
   recent.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());

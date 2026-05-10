@@ -16,24 +16,32 @@ export function TrainingTimer({
 
   useEffect(() => {
     expiredRef.current = false;
-    let id: number | undefined;
+    const id = window.setInterval(() => {
+      const s = Math.max(0, Math.floor((end - Date.now()) / 1000));
+      setLeft(s);
+      if (s <= 0 && !expiredRef.current) {
+        expiredRef.current = true;
+        window.clearInterval(id);
+        onExpire?.();
+      }
+    }, 1000);
+
     const fire = () => {
       if (expiredRef.current) return;
       expiredRef.current = true;
-      if (id !== undefined) window.clearInterval(id);
+      window.clearInterval(id);
       onExpire?.();
     };
 
-    const tick = () => {
-      const s = Math.max(0, Math.floor((end - Date.now()) / 1000));
-      setLeft(s);
-      if (s <= 0) fire();
-    };
+    const syncId = window.setTimeout(() => {
+      const initialSeconds = Math.max(0, Math.floor((end - Date.now()) / 1000));
+      setLeft(initialSeconds);
+      if (initialSeconds <= 0) fire();
+    }, 0);
 
-    tick();
-    id = window.setInterval(tick, 1000);
     return () => {
-      if (id !== undefined) window.clearInterval(id);
+      window.clearTimeout(syncId);
+      window.clearInterval(id);
     };
   }, [end, onExpire]);
 

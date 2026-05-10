@@ -7,7 +7,7 @@ import { TrendingUp, TrendingDown, Users, Target, CheckCircle2, AlertCircle } fr
 
 export default async function ManagerDashboardPage() {
   const data = await getManagerTeamPayload();
-  if (!data) redirect("/login");
+  if (!data) redirect("/app/dashboard");
 
   const { teamMembers, aggregatedStats, competencyHeatmap, department, organizationName } = data;
 
@@ -21,7 +21,7 @@ export default async function ManagerDashboardPage() {
         <p className="text-body-cerebral max-w-2xl">
           {organizationName}
           {department && <span className="text-white/50"> · {department}</span>}
-          <span className="text-white/50"> · {teamMembers.length} direct reports</span>
+          <span className="text-white/50"> · {teamMembers.length} team members</span>
         </p>
       </header>
 

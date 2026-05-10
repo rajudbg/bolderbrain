@@ -1,14 +1,31 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Send, X, Sparkles, Loader2, ChevronDown } from "lucide-react";
+import { ArrowRight, ChevronDown, Loader2, Send, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type WorkflowAction = {
+  id: string;
+  label: string;
+  href: string;
+  reason: string;
+};
 
 type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  actions?: WorkflowAction[];
+  source?: string;
+};
+
+type CoachSnapshot = {
+  storageKey: string;
+  welcome: string;
+  starterPrompts: string[];
+  workflowActions: WorkflowAction[];
 };
 
 const STARTER_PROMPTS = [
@@ -18,8 +35,74 @@ const STARTER_PROMPTS = [
   "What do my personality traits say about my work style?",
 ];
 
+function parseStoredMessages(raw: string | null): Message[] | null {
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+
+    const messages = parsed
+      .filter((entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null)
+      .map((entry) => ({
+        id: typeof entry.id === "string" ? entry.id : crypto.randomUUID(),
+        role: (entry.role === "user" ? "user" : "assistant") as "user" | "assistant",
+        content: typeof entry.content === "string" ? entry.content : "",
+        actions: Array.isArray(entry.actions)
+          ? entry.actions
+              .filter((action): action is Record<string, unknown> => typeof action === "object" && action !== null)
+              .map((action, index) => ({
+                id: typeof action.id === "string" ? action.id : `stored-${index}`,
+                label: typeof action.label === "string" ? action.label : "Open",
+                href: typeof action.href === "string" ? action.href : "/app/dashboard",
+                reason: typeof action.reason === "string" ? action.reason : "",
+              }))
+          : undefined,
+        source: typeof entry.source === "string" ? entry.source : undefined,
+      }))
+      .filter((entry) => entry.content.trim().length > 0);
+
+    return messages.length > 0 ? messages : null;
+  } catch {
+    return null;
+  }
+}
+
+function WorkflowActionChips({ actions }: { actions: WorkflowAction[] }) {
+  return (
+    <div className="mt-3 space-y-2">
+      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-cyan-300/55">Suggested next steps</p>
+      <div className="flex flex-wrap gap-2">
+        {actions.map((action) => (
+          <Link
+            key={action.id}
+            href={action.href}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1 text-xs",
+              "text-cyan-100 transition-colors hover:border-cyan-400/45 hover:bg-cyan-500/15",
+            )}
+          >
+            {action.label}
+            <ArrowRight className="size-3" />
+          </Link>
+        ))}
+      </div>
+      {actions[0]?.reason ? <p className="text-xs text-white/45">{actions[0].reason}</p> : null}
+    </div>
+  );
+}
+
+function sourceLabel(source: string | undefined): string | null {
+  if (!source) return null;
+  if (source === "RULE_BASED") return "Fallback guidance";
+  if (source === "CACHED") return "Cached AI";
+  if (source === "AI_GENERATED" || source === "AI_NEMOTRON") return "AI generated";
+  return null;
+}
+
 function ChatBubble({ msg }: { msg: Message }) {
   const isUser = msg.role === "user";
+  const label = !isUser ? sourceLabel(msg.source) : null;
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -36,11 +119,13 @@ function ChatBubble({ msg }: { msg: Message }) {
         className={cn(
           "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
           isUser
-            ? "bg-cyan-500/15 text-cyan-50 border border-cyan-500/20 rounded-tr-sm"
-            : "bg-white/[0.06] text-white/90 border border-white/10 rounded-tl-sm",
+            ? "rounded-tr-sm border border-cyan-500/20 bg-cyan-500/15 text-cyan-50"
+            : "rounded-tl-sm border border-white/10 bg-white/[0.06] text-white/90",
         )}
       >
         {msg.content}
+        {label ? <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-white/35">{label}</p> : null}
+        {!isUser && msg.actions && msg.actions.length > 0 ? <WorkflowActionChips actions={msg.actions} /> : null}
       </div>
     </motion.div>
   );
@@ -59,6 +144,9 @@ export function AiCoachChat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showStarters, setShowStarters] = useState(true);
+  const [starterPrompts, setStarterPrompts] = useState(STARTER_PROMPTS);
+  const [coachStorageKey, setCoachStorageKey] = useState<string | null>(null);
+  const [coachReady, setCoachReady] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -73,6 +161,57 @@ export function AiCoachChat() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (!coachStorageKey || typeof window === "undefined") return;
+    window.sessionStorage.setItem(coachStorageKey, JSON.stringify(messages));
+  }, [messages, coachStorageKey]);
+
+  async function initializeCoach() {
+    if (coachReady) return;
+
+    try {
+      const res = await fetch("/api/app/ai-coach", {
+        method: "GET",
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Failed to load coach context");
+
+      const data = (await res.json()) as CoachSnapshot;
+      setCoachStorageKey(data.storageKey);
+      setStarterPrompts(data.starterPrompts.length > 0 ? data.starterPrompts : STARTER_PROMPTS);
+
+      const storedMessages =
+        typeof window !== "undefined" ? parseStoredMessages(window.sessionStorage.getItem(data.storageKey)) : null;
+
+      if (storedMessages) {
+        setMessages(storedMessages);
+        setShowStarters(storedMessages.length <= 1);
+      } else {
+        setMessages([
+          {
+            id: "welcome",
+            role: "assistant",
+            content: data.welcome,
+            actions: data.workflowActions,
+          },
+        ]);
+        setShowStarters(true);
+      }
+
+      setCoachReady(true);
+    } catch {
+      // Keep the generic welcome when coach context is unavailable.
+    }
+  }
+
+  async function toggleOpen() {
+    const nextOpen = !open;
+    setOpen(nextOpen);
+    if (nextOpen) {
+      await initializeCoach();
+    }
+  }
 
   async function send(text?: string) {
     const messageText = (text ?? input).trim();
@@ -91,9 +230,9 @@ export function AiCoachChat() {
 
     try {
       const history = messages
-        .filter((m) => m.id !== "welcome")
+        .filter((message) => message.id !== "welcome")
         .slice(-6)
-        .map((m) => ({ role: m.role, content: m.content }));
+        .map((message) => ({ role: message.role, content: message.content }));
 
       const res = await fetch("/api/app/ai-coach", {
         method: "POST",
@@ -102,7 +241,7 @@ export function AiCoachChat() {
       });
 
       if (!res.ok) throw new Error("Request failed");
-      const data = await res.json() as { reply: string };
+      const data = (await res.json()) as { reply: string; source?: string; workflowActions?: WorkflowAction[] };
 
       setMessages((prev) => [
         ...prev,
@@ -110,6 +249,8 @@ export function AiCoachChat() {
           id: crypto.randomUUID(),
           role: "assistant",
           content: data.reply,
+          source: data.source,
+          actions: data.workflowActions,
         },
       ]);
     } catch {
@@ -128,7 +269,6 @@ export function AiCoachChat() {
 
   return (
     <>
-      {/* Floating trigger button */}
       <AnimatePresence>
         {!open && (
           <motion.button
@@ -138,7 +278,7 @@ export function AiCoachChat() {
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.2 }}
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={() => void toggleOpen()}
             id="ai-coach-open-btn"
             aria-label="Open AI coach"
             className={cn(
@@ -155,7 +295,6 @@ export function AiCoachChat() {
         )}
       </AnimatePresence>
 
-      {/* Chat panel */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -172,18 +311,17 @@ export function AiCoachChat() {
             )}
             style={{ height: "min(480px,calc(100dvh-12rem))" }}
           >
-            {/* Header */}
             <div className="ai-aurora-bg relative flex items-center gap-3 border-b border-white/10 px-4 py-3">
               <div className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_16px_rgba(6,182,212,0.5)]">
                 <Sparkles className="size-4 text-white" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-white/95">AI Development Coach</p>
-                <p className="text-[10px] text-cyan-400/80">Powered by DeepSeek</p>
+                <p className="text-[10px] text-cyan-400/80">Personalized from your live BolderBrain data</p>
               </div>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => void toggleOpen()}
                 aria-label="Close chat"
                 className="flex size-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/80"
               >
@@ -191,7 +329,6 @@ export function AiCoachChat() {
               </button>
             </div>
 
-            {/* Messages */}
             <div
               ref={scrollRef}
               className="flex flex-1 flex-col gap-3 overflow-y-auto p-4"
@@ -202,53 +339,46 @@ export function AiCoachChat() {
               ))}
 
               {loading && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-center gap-2.5"
-                >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2.5">
                   <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600">
                     <Loader2 className="size-3.5 animate-spin text-white" />
                   </div>
                   <div className="flex gap-1 rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.06] px-3.5 py-2.5">
-                    {[0, 1, 2].map((i) => (
+                    {[0, 1, 2].map((index) => (
                       <span
-                        key={i}
+                        key={index}
                         className="block size-1.5 animate-bounce rounded-full bg-white/40"
-                        style={{ animationDelay: `${i * 0.15}s` }}
+                        style={{ animationDelay: `${index * 0.15}s` }}
                       />
                     ))}
                   </div>
                 </motion.div>
               )}
 
-              {/* Starter prompts */}
               {showStarters && messages.length === 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-1 flex flex-wrap gap-2"
-                >
-                  {STARTER_PROMPTS.map((p) => (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-1 flex flex-wrap gap-2">
+                  {starterPrompts.map((prompt) => (
                     <button
-                      key={p}
+                      key={prompt}
                       type="button"
-                      onClick={() => send(p)}
+                      onClick={() => void send(prompt)}
                       className={cn(
                         "rounded-full border border-cyan-500/25 bg-cyan-500/5 px-3 py-1 text-xs",
                         "text-cyan-300/80 transition-all hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:text-cyan-200",
                       )}
                     >
-                      {p}
+                      {prompt}
                     </button>
                   ))}
                 </motion.div>
               )}
             </div>
 
-            {/* Input */}
             <form
-              onSubmit={(e) => { e.preventDefault(); void send(); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void send();
+              }}
               className="flex items-center gap-2 border-t border-white/10 p-3"
             >
               <input
@@ -274,7 +404,7 @@ export function AiCoachChat() {
                 className={cn(
                   "flex size-9 shrink-0 items-center justify-center rounded-xl transition-all",
                   "bg-gradient-to-br from-cyan-500 to-blue-600 text-white",
-                  "disabled:opacity-35 disabled:cursor-not-allowed",
+                  "disabled:cursor-not-allowed disabled:opacity-35",
                   "hover:shadow-[0_0_16px_rgba(6,182,212,0.4)] active:scale-95",
                 )}
               >

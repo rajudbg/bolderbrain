@@ -26,9 +26,8 @@ import { cn } from "@/lib/utils";
 import { AiCoachChat } from "@/components/ai/ai-coach-chat";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
-const nav = [
+const employeeNav = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/app/manager", label: "My team", icon: Users },
   { href: "/app/actions", label: "My actions", icon: Target },
   { href: "/app/training", label: "My learning", icon: GraduationCap },
   { href: "/app/development", label: "Development", icon: Flame },
@@ -39,6 +38,7 @@ const nav = [
   { href: "/app/profile", label: "Profile", icon: User },
 ];
 
+const managerNavItem = { href: "/app/manager", label: "My team", icon: Users };
 const adminNavItem = { href: "/admin", label: "HR admin", icon: Briefcase };
 
 const dockItems = [
@@ -79,13 +79,20 @@ function NavLinks({
   onNavigate,
   className,
   showAdminLink,
+  showManagerLink,
 }: {
   onNavigate?: () => void;
   className?: string;
   showAdminLink?: boolean;
+  showManagerLink?: boolean;
 }) {
   const pathname = usePathname();
-  const items = showAdminLink ? [...nav, adminNavItem] : nav;
+  const items = [
+    employeeNav[0]!,
+    ...(showManagerLink ? [managerNavItem] : []),
+    ...employeeNav.slice(1),
+    ...(showAdminLink ? [adminNavItem] : []),
+  ];
   return (
     <nav className={cn("flex flex-col gap-1", className)}>
       {items.map(({ href, label, icon: Icon }) => {
@@ -115,11 +122,13 @@ export function AppShell({
   userName,
   userEmail,
   showAdminLink = false,
+  showManagerLink = false,
   children,
 }: {
   userName: string | null;
   userEmail: string | null;
   showAdminLink?: boolean;
+  showManagerLink?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -138,7 +147,7 @@ export function AppShell({
         </div>
         <div className="flex flex-1 flex-col px-3 py-4">
           <p className="text-caption-cerebral mb-2 px-3">Navigate</p>
-          <NavLinks showAdminLink={showAdminLink} />
+          <NavLinks showAdminLink={showAdminLink} showManagerLink={showManagerLink} />
         </div>
         <div className="space-y-3 border-t border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
@@ -190,7 +199,12 @@ export function AppShell({
               </div>
               <div className="p-3">
                 <nav className="flex flex-col gap-1">
-                  {(showAdminLink ? [...nav, adminNavItem] : nav).map(({ href, label, icon: Icon }) => {
+                  {[
+                    employeeNav[0]!,
+                    ...(showManagerLink ? [managerNavItem] : []),
+                    ...employeeNav.slice(1),
+                    ...(showAdminLink ? [adminNavItem] : []),
+                  ].map(({ href, label, icon: Icon }) => {
                     const active = navActive(pathname, href);
                     return (
                       <Link

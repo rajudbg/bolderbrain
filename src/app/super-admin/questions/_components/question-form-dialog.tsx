@@ -160,7 +160,6 @@ export function QuestionFormDialog({
   const [semanticSteps, setSemanticSteps] = useState(5);
 
   const selectedTemplate = templates.find((t) => t.id === templateId);
-  const selectedTemplateName = selectedTemplate?.name ?? "Select template";
   const selectedQuestionTypeLabel = questionTypeLabel(questionType);
   const allowedQuestionTypes = questionTypesForTemplate(selectedTemplate?.type ?? AssessmentTemplateType.IQ_COGNITIVE);
 

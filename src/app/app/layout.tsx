@@ -9,13 +9,14 @@ export default async function EmployeeAppLayout({ children }: { children: React.
     redirect("/login?callbackUrl=/app/dashboard");
   }
 
-  const showAdminLink = listAdminTenants(session.user.tenants).length > 0;
+  const canManageOrg = listAdminTenants(session.user.tenants).length > 0;
 
   return (
     <AppShell
       userName={session.user.name ?? null}
       userEmail={session.user.email ?? null}
-      showAdminLink={showAdminLink}
+      showAdminLink={canManageOrg}
+      showManagerLink={canManageOrg}
     >
       {children}
     </AppShell>

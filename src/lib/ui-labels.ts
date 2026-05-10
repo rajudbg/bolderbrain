@@ -13,7 +13,6 @@ import {
   Heart,
   Leaf,
   Search,
-  TrendingDown,
   TrendingUp,
   User,
   UserCheck,

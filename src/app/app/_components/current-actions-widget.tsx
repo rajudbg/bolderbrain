@@ -142,11 +142,15 @@ function ActionItemRow({ item }: { item: Item }) {
     if (newStatus === "IN_PROGRESS") {
       setIsSubmitting(true);
       try {
-        await startMyUserAction(item.id);
+        const result = await startMyUserAction(item.id);
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
         setStatus(newStatus);
         toast.success("Marked as in progress");
-      } catch {
-        toast.error("Failed to update");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to update");
       } finally {
         setIsSubmitting(false);
       }
@@ -160,12 +164,16 @@ function ActionItemRow({ item }: { item: Item }) {
     }
     setIsSubmitting(true);
     try {
-      await completeMyUserAction(item.id, reflection);
+      const result = await completeMyUserAction(item.id, reflection);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
       setStatus("COMPLETED");
       toast.success("Action completed!");
       setShowComplete(false);
-    } catch {
-      toast.error("Failed to complete");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to complete");
     } finally {
       setIsSubmitting(false);
     }

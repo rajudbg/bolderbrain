@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Brain, ChevronDown } from "lucide-react";
+import { Menu, X, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [

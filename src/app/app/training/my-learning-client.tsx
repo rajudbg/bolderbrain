@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { BookOpen, CheckCircle2, Circle, GraduationCap, Sparkles, TrendingUp } from "lucide-react";
+import { BookOpen, CheckCircle2, Circle, GraduationCap, Sparkles } from "lucide-react";
 import type { MyTrainingRow } from "./actions";
 import { cn } from "@/lib/utils";
 
@@ -173,13 +173,6 @@ function Stage({
       : accent === "violet"
         ? "border-violet-400/35 shadow-[0_0_18px_rgba(167,139,250,0.12)]"
         : "border-amber-400/35 shadow-[0_0_22px_rgba(245,158,11,0.14)]";
-
-  const bgAccent =
-    accent === "sky"
-      ? "bg-sky-500/10"
-      : accent === "violet"
-        ? "bg-violet-500/10"
-        : "bg-amber-500/10";
 
   const content = (
     <div

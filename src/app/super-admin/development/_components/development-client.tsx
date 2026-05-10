@@ -118,6 +118,15 @@ export function DevelopmentClient({
     [competencies],
   );
 
+  const selectedOrgName = useMemo(() => {
+    return organizations.find((o) => o.id === orgId)?.name ?? "Select organization";
+  }, [orgId, organizations]);
+
+  const selectedCompetencyName = useMemo(() => {
+    if (!competencyId || competencyId === EMPTY_COMPETENCY) return "Select competency";
+    return competencies.find((c) => c.id === competencyId)?.name ?? "Select competency";
+  }, [competencyId, competencies]);
+
   async function onCreateCompetency(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -172,15 +181,6 @@ export function DevelopmentClient({
       </div>
     );
   }
-
-  const selectedOrgName = useMemo(() => {
-    return organizations.find((o) => o.id === orgId)?.name ?? "Select organization";
-  }, [orgId, organizations]);
-
-  const selectedCompetencyName = useMemo(() => {
-    if (!competencyId || competencyId === EMPTY_COMPETENCY) return "Select competency";
-    return competencies.find((c) => c.id === competencyId)?.name ?? "Select competency";
-  }, [competencyId, competencies]);
 
   return (
     <div className="space-y-8">

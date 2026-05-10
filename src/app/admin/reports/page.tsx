@@ -8,8 +8,7 @@ export default function ReportsPage() {
         <p className="text-muted-foreground text-sm font-medium uppercase tracking-wide">Exports</p>
         <h1 className="text-3xl font-semibold tracking-tight">Reports &amp; integrations</h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-          Download CSV for HRIS pipelines. PDF and scheduled digests are scaffolded — connect your document and job
-          runners.
+          Download CSV for HRIS pipelines and generate print-ready packets for employee conversations.
         </p>
       </header>
 
@@ -43,19 +42,6 @@ export default function ReportsPage() {
           <ReportsPrintButton />
           <p className="text-muted-foreground w-full text-xs">
             Uses the browser print dialog — for branded PDFs, add a dedicated print stylesheet or server renderer.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Scheduled weekly digest</CardTitle>
-          <CardDescription>Email summary of completed assessments</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            Stub — connect a cron worker + mail provider. Recommended payload: KPIs from the overview page + new
-            completions count.
           </p>
         </CardContent>
       </Card>

@@ -31,7 +31,7 @@ export function hasOpenRouterCredentials(): boolean {
 }
 
 export const PRIMARY_MODEL =
-  process.env.AI_PRIMARY_MODEL || "deepseek/deepseek-chat-v3-5:free";
+  process.env.AI_PRIMARY_MODEL || "deepseek/deepseek-v4-flash";
 
 export type AIGenerationResult = {
   success: boolean;

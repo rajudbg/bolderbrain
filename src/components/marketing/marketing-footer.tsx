@@ -8,24 +8,17 @@ const footerLinks = {
     { label: "Features", href: "/marketing/features" },
     { label: "Pricing", href: "/marketing/pricing" },
     { label: "Security", href: "/marketing/security" },
-    { label: "Changelog", href: "#" },
+    { label: "Book demo", href: "/marketing/demo" },
   ],
   company: [
-    { label: "About", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Careers", href: "#" },
-    { label: "Contact", href: "#" },
+    { label: "Home", href: "/" },
+    { label: "Contact", href: "/marketing/demo" },
+    { label: "Log in", href: "/login" },
   ],
   resources: [
-    { label: "Documentation", href: "#" },
-    { label: "API Reference", href: "#" },
-    { label: "Guides", href: "#" },
-    { label: "Support", href: "#" },
-  ],
-  legal: [
-    { label: "Privacy", href: "#" },
-    { label: "Terms", href: "#" },
-    { label: "Cookie Policy", href: "#" },
+    { label: "Platform overview", href: "/marketing" },
+    { label: "Features", href: "/marketing/features" },
+    { label: "Support", href: "/marketing/demo" },
   ],
 };
 
@@ -48,15 +41,15 @@ export function MarketingFooter() {
               AI-powered people intelligence platform for modern HR and L&D teams.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="text-white/40 hover:text-white transition-colors">
+              <a href="mailto:sales@bolderbrain.com" aria-label="Email sales" className="text-white/40 hover:text-white transition-colors">
                 <MessageCircle className="h-5 w-5" />
               </a>
-              <a href="#" className="text-white/40 hover:text-white transition-colors">
+              <Link href="/" aria-label="BolderBrain home" className="text-white/40 hover:text-white transition-colors">
                 <Globe className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-white/40 hover:text-white transition-colors">
+              </Link>
+              <Link href="/marketing/security" aria-label="Security" className="text-white/40 hover:text-white transition-colors">
                 <Code2 className="h-5 w-5" />
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -109,21 +102,6 @@ export function MarketingFooter() {
             </ul>
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Legal</h4>
-            <ul className="space-y-3">
-              {footerLinks.legal.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
