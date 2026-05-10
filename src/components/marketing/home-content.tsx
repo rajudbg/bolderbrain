@@ -126,8 +126,8 @@ const testimonials = [
 ];
 
 const stats = [
-  { value: "500+", label: "Organizations" },
-  { value: "2M+", label: "Assessments Delivered" },
+  { value: "100+", label: "Organizations" },
+  { value: "4.2k", label: "Assessments Delivered" },
   { value: "94%", label: "Completion Rate" },
   { value: "4.9/5", label: "User Satisfaction" },
 ];
@@ -422,7 +422,7 @@ export function HomeContent() {
                 Ready to transform your people strategy?
               </h2>
               <p className="text-lg text-white/70 mb-8 max-w-xl mx-auto">
-                Join 500+ organizations using BolderBrain to understand, develop, and retain their best talent.
+                Join 100+ organizations using BolderBrain to understand, develop, and retain their best talent.
               </p>
               <Link
                 href="/marketing/demo"
