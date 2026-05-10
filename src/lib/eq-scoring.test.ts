@@ -13,7 +13,7 @@ describe('EQ Scoring Logic', () => {
       q2: { likert: 1 } 
     };
 
-    const result = computeEqAssessmentResult(questions as any, responses);
+    const result = computeEqAssessmentResult(questions as unknown as EqQuestionForScoring[], responses);
     
     expect(result).toHaveProperty('domainScores');
     expect(result).toHaveProperty('compositeScore');

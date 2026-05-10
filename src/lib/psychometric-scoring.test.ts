@@ -6,14 +6,14 @@ describe('Psychometric Scoring Logic', () => {
     const questions = [
       { 
         id: 'q1', 
-        questionType: 'SEMANTIC_DIFFERENTIAL' as any, 
+        questionType: 'SEMANTIC_DIFFERENTIAL' as unknown as never, 
         traitCategory: 'Openness', 
         reverseScored: false, 
         config: { steps: 5 } 
       },
       { 
         id: 'q2', 
-        questionType: 'SEMANTIC_DIFFERENTIAL' as any, 
+        questionType: 'SEMANTIC_DIFFERENTIAL' as unknown as never, 
         traitCategory: 'Extraversion', 
         reverseScored: true, 
         config: { steps: 5 } 

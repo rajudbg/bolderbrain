@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
-    "start": "next start -H 127.0.0.1",
+    "build": "next build",
+    "start": "next start",
+    "postinstall": "prisma generate",
     "lint": "eslint . --max-warnings 0",
     "check": "npm run lint && npm run build",
     "db:generate": "prisma generate",
