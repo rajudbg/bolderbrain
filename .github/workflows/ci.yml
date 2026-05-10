@@ -7,6 +7,11 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # Dummy values so Next.js build doesn't crash when collecting page data.
+  # No real DB connection is made during build; Prisma only needs the URL to be set.
+  DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+  NEXTAUTH_URL: "http://localhost:3000"
+  NEXTAUTH_SECRET: "ci-secret-not-used-in-production"
 
 jobs:
   build-and-test:
