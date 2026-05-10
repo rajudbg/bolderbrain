@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { requirePlatformSuperAdmin } from "@/lib/super-admin-auth";
 import { SuperAdminMobileMenu } from "./_components/super-admin-mobile-menu";
 import { SuperAdminNav } from "./_components/super-admin-nav";
-import { SignOutButton } from "./_components/sign-out-button";
 
 export const metadata: Metadata = {
   title: "Super Admin · BolderBrain",
@@ -23,9 +22,6 @@ export default async function SuperAdminLayout({ children }: { children: React.R
         <div className="flex flex-1 flex-col px-3 py-4">
           <p className="text-caption-cerebral mb-2 px-3">Navigate</p>
           <SuperAdminNav />
-        </div>
-        <div className="space-y-3 border-t border-white/[0.06] p-4">
-          <SignOutButton />
         </div>
       </aside>
 

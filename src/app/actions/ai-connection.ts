@@ -26,3 +26,15 @@ export async function testAiConnectionAdmin(): Promise<OpenRouterPingResult> {
   }
   return runOpenRouterPing();
 }
+
+/** Platform admin: same ping; ensures only platform super admins reach this. */
+export async function testAiConnectionSuperAdmin(): Promise<OpenRouterPingResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { ok: false, hasKey: false, message: "You must be signed in." };
+  }
+  if (!session.user.isPlatformSuperAdmin) {
+    return { ok: false, hasKey: hasOpenRouterCredentials(), message: "Platform super admin access required." };
+  }
+  return runOpenRouterPing();
+}

@@ -11,7 +11,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { requirePlatformSuperAdmin } from "@/lib/super-admin-auth";
 import { getAIMetrics, healthStatusFromMetrics } from "@/lib/ai/metrics";
-import { PRIMARY_MODEL } from "@/lib/ai/openrouter";
 import { cn } from "@/lib/utils";
 import { AISparkleIcon } from "@/components/icons/ai-sparkle";
 
@@ -34,7 +33,7 @@ export default async function SuperAdminAiHealthPage() {
         <p className="text-caption-cerebral">Super Admin</p>
         <h1 className="text-gradient-heading text-3xl font-semibold tracking-tight">Neural Intelligence Layer</h1>
         <p className="text-body-cerebral max-w-2xl">
-          Aurora-branded health for Nemotron and rule-based fallback. Metrics reflect persisted 360 insights (last 24h).
+          Health metrics for Anthropic Claude Opus and rule-based fallback. Metrics reflect persisted insights (last 24h).
         </p>
       </header>
 
@@ -69,7 +68,7 @@ export default async function SuperAdminAiHealthPage() {
         <MetricCard
           title="AI success rate"
           value={`${m.aiSuccessRate.toFixed(1)}%`}
-          subtitle="Nemotron + cache"
+          subtitle="Claude + cache"
           trend={aiOk ? "up" : "down"}
           color="cyan"
           icon={Zap}
@@ -93,7 +92,7 @@ export default async function SuperAdminAiHealthPage() {
         <MetricCard
           title="Cost"
           value={m.costPerInsight}
-          subtitle="Nemotron free tier"
+          subtitle="Anthropic tier"
           trend="neutral"
           color="slate"
           icon={Wallet}
@@ -134,8 +133,8 @@ export default async function SuperAdminAiHealthPage() {
               <Cpu className="size-5 text-cyan-400" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium text-white">Nemotron-3 Super 120B</div>
-              <div className="truncate text-xs text-white/50">{PRIMARY_MODEL}</div>
+              <div className="font-medium text-white">Anthropic Claude 3 Opus</div>
+              <div className="truncate text-xs text-white/50">claude-3-opus-latest</div>
             </div>
             <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-300">
               Operational

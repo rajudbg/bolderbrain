@@ -4,6 +4,8 @@ import { requirePlatformSuperAdmin } from "@/lib/super-admin-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResetDemoButton } from "./reset-demo-button";
 import { SuperAdminSkeleton } from "@/components/ui/skeleton-loading";
+import { AiConnectionTestCard } from "@/components/profile/ai-connection-test";
+import { testAiConnectionSuperAdmin } from "@/app/actions/ai-connection";
 
 export default async function SuperAdminHomePage() {
   return (
@@ -43,6 +45,8 @@ async function SuperAdminContent() {
           <ResetDemoButton />
         </CardContent>
       </Card>
+
+      <AiConnectionTestCard variant="admin" testAction={testAiConnectionSuperAdmin} />
 
       <section className="grid gap-4 sm:grid-cols-3">
         <Card className="border-border/60 shadow-sm">
