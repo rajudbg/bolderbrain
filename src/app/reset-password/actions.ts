@@ -13,7 +13,7 @@ const resetPasswordSchema = z.object({
 export async function resetPassword(input: z.infer<typeof resetPasswordSchema>) {
   const parsed = resetPasswordSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.errors[0]?.message || "Invalid input." };
+    return { error: "Invalid input or password is too short." };
   }
 
   const { email, token, password } = parsed.data;

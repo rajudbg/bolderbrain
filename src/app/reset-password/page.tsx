@@ -44,7 +44,7 @@ function ResetPasswordForm() {
     setLoading(true);
     setError(null);
     try {
-      const res = await resetPassword({ email, token, password });
+      const res = await resetPassword({ email: email as string, token: token as string, password });
       if (res?.error) {
         setError(res.error);
       } else {
@@ -88,7 +88,7 @@ function ResetPasswordForm() {
         <Input
           id="email"
           type="email"
-          value={email}
+          value={email as string}
           disabled
           className="bg-slate-900/50 text-slate-400 cursor-not-allowed"
         />
