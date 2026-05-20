@@ -1052,3 +1052,13 @@ model UserNotification {
   @@index([userId, isRead, isDismissed])
   @@index([userId, createdAt(sort: Desc)])
 }
+
+// ─── Platform Configuration ──────────────────────────────────────────────────
+
+model PlatformSetting {
+  key       String    @id @db.VarChar(100)
+  value     String    @db.Text
+  updatedAt DateTime  @updatedAt
+  updatedBy String?
+}
+

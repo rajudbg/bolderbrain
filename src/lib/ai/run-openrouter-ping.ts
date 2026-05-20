@@ -1,4 +1,4 @@
-import { getOpenRouter, hasOpenRouterCredentials, PRIMARY_MODEL } from "@/lib/ai/openrouter";
+import { getOpenRouter, hasOpenRouterCredentials, getPrimaryModel } from "@/lib/ai/openrouter";
 
 export type OpenRouterPingResult = {
   ok: boolean;
@@ -25,8 +25,9 @@ export async function runOpenRouterPing(): Promise<OpenRouterPingResult> {
   const start = Date.now();
   try {
     const openrouter = getOpenRouter();
+    const model = await getPrimaryModel();
     const completion = await openrouter.chat.completions.create({
-      model: PRIMARY_MODEL,
+      model,
       messages: [{ role: "user", content: "Reply with exactly: OK" }],
       max_tokens: 16,
       temperature: 0,
@@ -37,7 +38,7 @@ export async function runOpenRouterPing(): Promise<OpenRouterPingResult> {
       ok: true,
       hasKey: true,
       message: text ? `Model replied: "${text.slice(0, 200)}${text.length > 200 ? "…" : ""}"` : "Empty model response",
-      model: completion.model ?? PRIMARY_MODEL,
+      model: completion.model ?? model,
       latencyMs,
     };
   } catch (e) {

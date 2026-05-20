@@ -11,9 +11,43 @@ function appOrigin(): string {
   );
 }
 
+async function sendResendEmail(params: {
+  to: string;
+  subject: string;
+  text: string;
+  label: string;
+}): Promise<void> {
+  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM,
+          to: [params.to],
+          subject: params.subject,
+          text: params.text,
+        }),
+      });
+      if (!res.ok) {
+        console.error("[email] Resend error", res.status, await res.text());
+      }
+    } catch (e) {
+      console.error("[email] Resend failed", e);
+    }
+    return;
+  }
+  console.log(`[email stub] ${params.label}`, { to: params.to, subject: params.subject, text: params.text });
+}
+
 export function buildAssessmentTakeUrl(evaluatorId: string): string {
   return `${appOrigin()}/assessments/${evaluatorId}`;
 }
+
+// ── Public notifiers ──────────────────────────────────────────
 
 export async function notifyEvaluatorAssigned(input: {
   to: string | null | undefined;
@@ -37,31 +71,7 @@ export async function notifyEvaluatorAssigned(input: {
     `If you did not expect this message, you can ignore it.`,
   ].join("\n");
 
-  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM,
-          to: [to],
-          subject,
-          text,
-        }),
-      });
-      if (!res.ok) {
-        console.error("[email] Resend error", res.status, await res.text());
-      }
-    } catch (e) {
-      console.error("[email] Resend failed", e);
-    }
-    return;
-  }
-
-  console.log("[email stub]", { to, subject, text });
+  await sendResendEmail({ to, subject, text, label: "evaluator-assigned" });
 }
 
 export async function notifyPendingReminder(input: {
@@ -71,10 +81,7 @@ export async function notifyPendingReminder(input: {
   organizationName: string;
   evaluatorId: string;
 }): Promise<void> {
-  await notifyEvaluatorAssigned({
-    ...input,
-    recipientName: input.recipientName,
-  });
+  await notifyEvaluatorAssigned(input);
 }
 
 const assessmentKindLabels: Record<string, string> = {
@@ -109,31 +116,7 @@ export async function notifyEmployeeSelfAssessmentAssigned(input: {
     `If you did not expect this message, contact your HR administrator.`,
   ].join("\n");
 
-  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM,
-          to: [to],
-          subject,
-          text,
-        }),
-      });
-      if (!res.ok) {
-        console.error("[email] Resend error", res.status, await res.text());
-      }
-    } catch (e) {
-      console.error("[email] Resend failed", e);
-    }
-    return;
-  }
-
-  console.log("[email stub]", { to, subject, text });
+  await sendResendEmail({ to, subject, text, label: "self-assessment-assigned" });
 }
 
 /** Training program — remind enrolled participant to complete pre/post in My learning. */
@@ -159,31 +142,7 @@ export async function notifyTrainingProgramReminder(input: {
     `If you did not expect this message, contact your HR administrator.`,
   ].join("\n");
 
-  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM,
-          to: [to],
-          subject,
-          text,
-        }),
-      });
-      if (!res.ok) {
-        console.error("[email] Resend error", res.status, await res.text());
-      }
-    } catch (e) {
-      console.error("[email] Resend failed", e);
-    }
-    return;
-  }
-
-  console.log("[email stub]", { to, subject, text });
+  await sendResendEmail({ to, subject, text, label: "training-reminder" });
 }
 
 /** Training reminder with AI-generated or custom subject/body (plain text). */
@@ -211,31 +170,7 @@ export async function notifyTrainingProgramReminderAi(input: {
     `If you did not expect this message, contact your HR administrator.`,
   ].join("\n");
 
-  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM,
-          to: [to],
-          subject: input.subject,
-          text,
-        }),
-      });
-      if (!res.ok) {
-        console.error("[email] Resend error", res.status, await res.text());
-      }
-    } catch (e) {
-      console.error("[email] Resend failed", e);
-    }
-    return;
-  }
-
-  console.log("[email stub]", { to, subject: input.subject, text });
+  await sendResendEmail({ to, subject: input.subject, text, label: "training-reminder-ai" });
 }
 
 export async function notifyDemoRequest(input: {
@@ -262,31 +197,7 @@ export async function notifyDemoRequest(input: {
     input.message?.trim() || "No message provided.",
   ].join("\n");
 
-  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM,
-          to: [to],
-          subject,
-          text,
-        }),
-      });
-      if (!res.ok) {
-        console.error("[email] Resend error", res.status, await res.text());
-      }
-    } catch (e) {
-      console.error("[email] Resend failed", e);
-    }
-    return;
-  }
-
-  console.log("[demo request]", { to, subject, text });
+  await sendResendEmail({ to, subject, text, label: "demo-request" });
 }
 
 export async function sendPasswordResetEmail(email: string, token: string): Promise<void> {
@@ -303,29 +214,5 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
     `If you did not request this, you can safely ignore this email.`,
   ].join("\n");
 
-  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM,
-          to: [email],
-          subject,
-          text,
-        }),
-      });
-      if (!res.ok) {
-        console.error("[email] Resend error", res.status, await res.text());
-      }
-    } catch (e) {
-      console.error("[email] Resend failed", e);
-    }
-    return;
-  }
-
-  console.log("[email stub]", { to: email, subject, text });
+  await sendResendEmail({ to: email, subject, text, label: "password-reset" });
 }

@@ -1,5 +1,5 @@
 import { getCache, setCache } from "./cache";
-import { getOpenRouter, hasOpenRouterCredentials, PRIMARY_MODEL, type AIGenerationResult } from "./openrouter";
+import { getOpenRouter, hasOpenRouterCredentials, getPrimaryModel, type AIGenerationResult } from "./openrouter";
 import { sleep } from "@/lib/utils";
 
 function aiFallbackEnabled(): boolean {
@@ -51,9 +51,10 @@ export async function generateWithFallback(
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const openrouter = getOpenRouter();
+      const model = await getPrimaryModel();
       const completion = await openrouter.chat.completions.create(
         {
-          model: PRIMARY_MODEL,
+          model,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: prompt },
@@ -81,9 +82,10 @@ export async function generateWithFallback(
         success: true,
         content,
         source: "AI_GENERATED",
-        modelUsed: PRIMARY_MODEL,
+        modelUsed: model,
         generationTimeMs: Date.now() - startTime,
       };
+
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.warn(`AI attempt ${i + 1} failed:`, msg);

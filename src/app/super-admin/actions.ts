@@ -10,6 +10,8 @@ import {
   ScoringStrategy,
 } from "@/generated/prisma/enums";
 import { sanitizeJsonTextFields, sanitizeRichText } from "@/lib/sanitize";
+import { setPrimaryModelInDb } from "@/lib/platform-settings";
+import { invalidateModelCache } from "@/lib/ai/openrouter";
 import { z } from "zod";
 
 const slugSchema = z
@@ -62,6 +64,15 @@ export async function deleteOrganization(id: string) {
   revalidatePath("/super-admin/questions");
   revalidatePath("/super-admin/development");
   revalidatePath("/super-admin");
+}
+
+// --- AI model configuration ---
+
+export async function setAiModel(modelId: string) {
+  const session = await requirePlatformSuperAdmin();
+  await setPrimaryModelInDb(modelId, session.user.email ?? undefined);
+  invalidateModelCache();
+  revalidatePath("/super-admin/ai-health");
 }
 
 // --- Assessment templates ---

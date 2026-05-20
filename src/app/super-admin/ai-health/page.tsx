@@ -1,6 +1,5 @@
 import {
   Clock,
-  Cpu,
   Sparkles,
   Star,
   TrendingDown,
@@ -11,13 +10,17 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { requirePlatformSuperAdmin } from "@/lib/super-admin-auth";
 import { getAIMetrics, healthStatusFromMetrics } from "@/lib/ai/metrics";
+import { resolveEffectiveModel } from "@/lib/platform-settings";
+import { OPENROUTER_MODEL_OPTIONS } from "@/lib/ai/model-options";
 import { cn } from "@/lib/utils";
 import { AISparkleIcon } from "@/components/icons/ai-sparkle";
+import { ModelSelector } from "./_components/model-selector";
 
 export default async function SuperAdminAiHealthPage() {
   await requirePlatformSuperAdmin();
   const m = await getAIMetrics();
   const status = healthStatusFromMetrics(m);
+  const currentModel = await resolveEffectiveModel();
 
   const statusLabel =
     status === "green" ? "Healthy" : status === "yellow" ? "Watch" : "Attention";
@@ -128,19 +131,9 @@ export default async function SuperAdminAiHealthPage() {
 
         <div className="rounded-xl border border-cyan-500/20 bg-[#0A0A0C] p-4">
           <h3 className="mb-3 text-sm font-medium text-white/80">Active model</h3>
-          <div className="flex items-center gap-3 rounded-lg border border-cyan-500/15 bg-[#0A0A0C] p-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20">
-              <Cpu className="size-5 text-cyan-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium text-white">Anthropic Claude 3 Opus</div>
-              <div className="truncate text-xs text-white/50">claude-3-opus-latest</div>
-            </div>
-            <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-300">
-              Operational
-            </span>
-          </div>
+          <ModelSelector currentModelId={currentModel} options={OPENROUTER_MODEL_OPTIONS} />
           <p className="mt-3 text-xs leading-relaxed text-white/40">
+
             Green: AI success &gt; 90% and latency &lt; 3s. Yellow: mixed or no data. Red: AI success &lt; 70% or fallback &gt;
             30%.
           </p>

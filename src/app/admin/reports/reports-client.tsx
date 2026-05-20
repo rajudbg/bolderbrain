@@ -3,20 +3,50 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { build360Csv, buildPeopleCsv } from "../reports-actions";
+import {
+  build360Csv,
+  buildEqCsv,
+  buildIqCsv,
+  buildPeopleCsv,
+  buildPsychometricCsv,
+  buildTalentCsv,
+  buildTrainingImpactCsv,
+} from "../reports-actions";
 
-export function ReportsClient({ kind }: { kind: "people" | "360" }) {
+type ExportKind = "people" | "360" | "eq" | "psychometric" | "iq" | "training" | "talent";
+
+const actions = {
+  people: buildPeopleCsv,
+  "360": build360Csv,
+  eq: buildEqCsv,
+  psychometric: buildPsychometricCsv,
+  iq: buildIqCsv,
+  training: buildTrainingImpactCsv,
+  talent: buildTalentCsv,
+} as const;
+
+const filenames: Record<ExportKind, string> = {
+  people: "people-roster.csv",
+  "360": "360-assessments.csv",
+  eq: "eq-results.csv",
+  psychometric: "psychometric-results.csv",
+  iq: "iq-results.csv",
+  training: "training-impact.csv",
+  talent: "talent-lists.csv",
+};
+
+export function ReportsClient({ kind }: { kind: ExportKind }) {
   const [busy, setBusy] = useState(false);
 
   async function download() {
     setBusy(true);
     try {
-      const csv = kind === "people" ? await buildPeopleCsv() : await build360Csv();
+      const csv = await actions[kind]();
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = kind === "people" ? "people-roster.csv" : "360-assessments.csv";
+      a.download = filenames[kind];
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Download started");

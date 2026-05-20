@@ -33,6 +33,60 @@ export default function ReportsPage() {
         </Card>
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>EQ results (CSV)</CardTitle>
+            <CardDescription>Goleman domain scores and composite percentiles per employee</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ReportsClient kind="eq" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Psychometric results (CSV)</CardTitle>
+            <CardDescription>Big Five / OCEAN trait percentiles per employee</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ReportsClient kind="psychometric" />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>IQ results (CSV)</CardTitle>
+            <CardDescription>Cognitive scores, percentiles, and category labels per employee</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ReportsClient kind="iq" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Training impact (CSV)</CardTitle>
+            <CardDescription>Pre/post scores, change, and impact bands per employee</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ReportsClient kind="training" />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Talent lists (CSV)</CardTitle>
+            <CardDescription>High-risk and high-potential employees with reasons</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ReportsClient kind="talent" />
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>PDF performance packet</CardTitle>
