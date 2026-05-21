@@ -77,8 +77,8 @@ export function MyLearningClient({ rows }: { rows: MyTrainingRow[] }) {
                   accent="sky"
                   label="Stage 1 — Pre"
                   title="Establish your baseline"
-                  description="Complete your self-assessment before the workshop."
-                  done={r.preComplete}
+                  description={r.assessmentKind === "behavioral_360" ? "Complete your self-assessment before the workshop." : "Complete your knowledge or behavioral assessment before the workshop."}
+                  done={r.preComplete || r.enrollmentStatus !== "INVITED"}
                   href={
                     r.assessmentKind === "content"
                       ? r.preAttemptId && !r.preComplete
@@ -88,7 +88,7 @@ export function MyLearningClient({ rows }: { rows: MyTrainingRow[] }) {
                         ? `/assessments/${r.preEvaluatorId}`
                         : undefined
                   }
-                  locked={r.assessmentKind === "content" ? !r.preAttemptId : !r.preEvaluatorId}
+                  locked={r.assessmentKind === "content" ? (!r.preAttemptId && !r.preComplete && r.enrollmentStatus === "INVITED") : !r.preEvaluatorId}
                   isFirst
                 />
                 <Stage
