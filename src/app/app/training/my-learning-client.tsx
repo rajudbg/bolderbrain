@@ -7,9 +7,10 @@ import type { MyTrainingRow } from "./actions";
 import { cn } from "@/lib/utils";
 
 function calculateProgress(r: MyTrainingRow): number {
+  if (r.enrollmentStatus === "POST_COMPLETED") return 100;
   let completed = 0;
-  if (r.preComplete) completed++;
-  if (new Date() > new Date(r.trainingDate)) completed++;
+  if (r.preComplete || r.enrollmentStatus !== "INVITED") completed++;
+  if (new Date() > new Date(r.trainingDate) || r.enrollmentStatus === "TRAINING_COMPLETED") completed++;
   if (r.postComplete) completed++;
   return (completed / 3) * 100;
 }
