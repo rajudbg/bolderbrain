@@ -134,9 +134,9 @@ export function MyLearningClient({ rows }: { rows: MyTrainingRow[] }) {
               <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-500/[0.04] p-4">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-amber-300/60">Your results</p>
                 <div className="mt-2 flex items-baseline gap-3">
-                  <span className="text-2xl font-bold text-white/90">{typeof r.delta.overall.pre === "number" ? r.delta.overall.pre : "\u2014"}</span>
-                  <span className="text-amber-400 text-lg">\u2192</span>
-                  <span className="text-2xl font-bold text-amber-300">{typeof r.delta.overall.post === "number" ? r.delta.overall.post : "\u2014"}</span>
+                  <span className="text-2xl font-bold text-white/90">{typeof r.delta.overall.pre === "number" ? r.delta.overall.pre : "—"}</span>
+                  <span className="text-amber-400 text-lg">→</span>
+                  <span className="text-2xl font-bold text-amber-300">{typeof r.delta.overall.post === "number" ? r.delta.overall.post : "—"}</span>
                   <span className={cn("ml-1 text-sm font-semibold", (r.delta.overall.percentChange ?? 0) >= 0 ? "text-emerald-400" : "text-red-400")}>
                     {(r.delta.overall.percentChange ?? 0) >= 0 ? "+" : ""}{r.delta.overall.percentChange ?? 0}%
                   </span>
