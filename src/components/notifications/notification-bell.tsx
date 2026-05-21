@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
@@ -70,6 +71,8 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [panelStyle, setPanelStyle] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -85,7 +88,6 @@ export function NotificationBell() {
     }
   }, []);
 
-  // Poll every 60s and on mount
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       void fetchNotifications();
@@ -103,7 +105,10 @@ export function NotificationBell() {
   useEffect(() => {
     if (!open) return;
     function handler(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+      if (
+        panelRef.current && !panelRef.current.contains(e.target as Node) &&
+        triggerRef.current && !triggerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -112,9 +117,27 @@ export function NotificationBell() {
   }, [open]);
 
   async function handleOpen() {
-    setOpen((v) => !v);
-    if (!open && unreadCount > 0) {
-      // Mark all read optimistically
+    const nextOpen = !open;
+    if (nextOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const panelW = 360;
+      const panelH = 400;
+      const gap = 8;
+
+      let left = rect.right - panelW;
+      if (left < 16) left = 16;
+      if (left + panelW > window.innerWidth - 16) left = window.innerWidth - panelW - 16;
+
+      let top = rect.bottom + gap;
+      if (top + panelH > window.innerHeight - 16) {
+        top = rect.top - panelH - gap;
+      }
+      if (top < 16) top = 16;
+
+      setPanelStyle({ top, left });
+    }
+    setOpen(nextOpen);
+    if (nextOpen && unreadCount > 0) {
       setNotifications((n) => n.map((x) => ({ ...x, isRead: true })));
       setUnreadCount(0);
       await fetch("/api/app/notifications", {
@@ -127,7 +150,7 @@ export function NotificationBell() {
 
   async function handleDismiss(id: string, e: React.MouseEvent) {
     e.stopPropagation();
-    const removed = notifications.find((notification) => notification.id === id);
+    const removed = notifications.find((n) => n.id === id);
     setNotifications((n) => n.filter((x) => x.id !== id));
     if (removed && !removed.isRead) {
       setUnreadCount((count) => Math.max(0, count - 1));
@@ -147,10 +170,11 @@ export function NotificationBell() {
   const visible = notifications.filter((n) => !n.isRead || open).slice(0, 20);
 
   return (
-    <div className="relative" ref={panelRef}>
+    <>
       {/* Bell trigger */}
       <button
         type="button"
+        ref={triggerRef}
         id="notification-bell-btn"
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         onClick={() => void handleOpen()}
@@ -181,133 +205,132 @@ export function NotificationBell() {
         </AnimatePresence>
       </button>
 
-      {/* Dropdown panel */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            key="notif-panel"
-            initial={{ opacity: 0, y: 8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.97 }}
-            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className={cn(
-              "absolute right-0 top-11 z-50 w-[min(360px,calc(100vw-2rem))]",
-              "overflow-hidden rounded-2xl border border-white/10",
-              "bg-[#111115]/95 shadow-[0_32px_80px_rgba(0,0,0,0.7)] backdrop-blur-2xl",
-            )}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Bell className="size-4 text-white/60" />
-                <span className="text-sm font-semibold text-white/90">Notifications</span>
-                {notifications.length > 0 && (
-                  <span className="rounded-full bg-white/[0.07] px-1.5 py-0.5 text-[10px] text-white/50">
-                    {notifications.length}
-                  </span>
+      {/* Dropdown panel — rendered in portal to avoid parent clipping */}
+      {typeof window !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {open && (
+              <motion.div
+                key="notif-panel"
+                ref={panelRef}
+                initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                className={cn(
+                  "fixed z-[100] w-[min(360px,calc(100vw-2rem))]",
+                  "overflow-hidden rounded-2xl border border-white/10",
+                  "bg-[#111115]/95 shadow-[0_32px_80px_rgba(0,0,0,0.7)] backdrop-blur-2xl",
                 )}
-              </div>
-              {notifications.length > 0 && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setNotifications([]);
-                    setUnreadCount(0);
-                    await fetch("/api/app/notifications", {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ action: "mark_all_read" }),
-                    });
-                  }}
-                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-white/40 transition-colors hover:text-white/70"
-                >
-                  <CheckCheck className="size-3.5" />
-                  Clear all
-                </button>
-              )}
-            </div>
-
-            {/* Notification list */}
-            <div
-              className="max-h-[min(400px,60dvh)] overflow-y-auto"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {visible.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-12 text-center">
-                  <div className="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
-                    <Bell className="size-6 text-white/20" />
+                style={{ top: panelStyle.top, left: panelStyle.left }}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <Bell className="size-4 text-white/60" />
+                    <span className="text-sm font-semibold text-white/90">Notifications</span>
+                    {notifications.length > 0 && (
+                      <span className="rounded-full bg-white/[0.07] px-1.5 py-0.5 text-[10px] text-white/50">
+                        {notifications.length}
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-white/50">All caught up</p>
-                    <p className="mt-0.5 text-xs text-white/30">No new notifications</p>
-                  </div>
+                  {notifications.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setNotifications([]);
+                        setUnreadCount(0);
+                        await fetch("/api/app/notifications", {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ action: "mark_all_read" }),
+                        });
+                      }}
+                      className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-white/40 transition-colors hover:text-white/70"
+                    >
+                      <CheckCheck className="size-3.5" />
+                      Clear all
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <ul className="divide-y divide-white/[0.05]">
-                  {visible.map((notif) => {
-                    const Icon = typeIcon(notif.type);
-                    const gradient = typeColor(notif.type);
-                    return (
-                      <motion.li
-                        key={notif.id}
-                        layout
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 8 }}
-                        className={cn(
-                          "group relative flex cursor-pointer gap-3 px-4 py-3.5 transition-colors",
-                          "hover:bg-white/[0.04]",
-                          !notif.isRead && "bg-white/[0.025]",
-                        )}
-                        onClick={() => handleNotificationClick(notif)}
-                      >
-                        {/* Unread dot */}
-                        {!notif.isRead && (
-                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-indigo-400" />
-                        )}
 
-                        {/* Icon */}
-                        <div
-                          className={cn(
-                            "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl",
-                            `bg-gradient-to-br ${gradient}`,
-                          )}
-                        >
-                          <Icon className="size-4 text-white" />
-                        </div>
-
-                        {/* Content */}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium leading-snug text-white/90">
-                            {notif.title}
-                          </p>
-                          <p className="mt-0.5 text-xs leading-relaxed text-white/50 line-clamp-2">
-                            {notif.body}
-                          </p>
-                          <p className="mt-1 flex items-center gap-1 text-[10px] text-white/30">
-                            <Clock className="size-2.5" />
-                            {relativeTime(notif.createdAt)}
-                          </p>
-                        </div>
-
-                        {/* Dismiss */}
-                        <button
-                          type="button"
-                          onClick={(e) => void handleDismiss(notif.id, e)}
-                          aria-label="Dismiss notification"
-                          className="mt-0.5 shrink-0 rounded-lg p-1 text-white/20 opacity-0 transition-all hover:bg-white/[0.06] hover:text-white/60 group-hover:opacity-100"
-                        >
-                          <X className="size-3.5" />
-                        </button>
-                      </motion.li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          </motion.div>
+                {/* Notification list */}
+                <div
+                  className="max-h-[min(400px,60dvh)] overflow-y-auto"
+                  style={{ scrollbarWidth: "none" }}
+                >
+                  {visible.length === 0 ? (
+                    <div className="flex flex-col items-center gap-3 py-12 text-center">
+                      <div className="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
+                        <Bell className="size-6 text-white/20" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white/50">All caught up</p>
+                        <p className="mt-0.5 text-xs text-white/30">No new notifications</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-white/[0.05]">
+                      {visible.map((notif) => {
+                        const Icon = typeIcon(notif.type);
+                        const gradient = typeColor(notif.type);
+                        return (
+                          <motion.li
+                            key={notif.id}
+                            layout
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 8 }}
+                            className={cn(
+                              "group relative flex cursor-pointer gap-3 px-4 py-3.5 transition-colors",
+                              "hover:bg-white/[0.04]",
+                              !notif.isRead && "bg-white/[0.025]",
+                            )}
+                            onClick={() => handleNotificationClick(notif)}
+                          >
+                            {!notif.isRead && (
+                              <span className="absolute left-1.5 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-indigo-400" />
+                            )}
+                            <div
+                              className={cn(
+                                "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl",
+                                `bg-gradient-to-br ${gradient}`,
+                              )}
+                            >
+                              <Icon className="size-4 text-white" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium leading-snug text-white/90">
+                                {notif.title}
+                              </p>
+                              <p className="mt-0.5 text-xs leading-relaxed text-white/50 line-clamp-2">
+                                {notif.body}
+                              </p>
+                              <p className="mt-1 flex items-center gap-1 text-[10px] text-white/30">
+                                <Clock className="size-2.5" />
+                                {relativeTime(notif.createdAt)}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => void handleDismiss(notif.id, e)}
+                              aria-label="Dismiss notification"
+                              className="mt-0.5 shrink-0 rounded-lg p-1 text-white/20 opacity-0 transition-all hover:bg-white/[0.06] hover:text-white/60 group-hover:opacity-100"
+                            >
+                              <X className="size-3.5" />
+                            </button>
+                          </motion.li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body,
         )}
-      </AnimatePresence>
-    </div>
+    </>
   );
 }
