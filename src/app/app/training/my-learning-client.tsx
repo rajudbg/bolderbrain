@@ -104,7 +104,7 @@ export function MyLearningClient({ rows }: { rows: MyTrainingRow[] }) {
                   label="Stage 3 — Post"
                   title="Measure your growth"
                   description="Unlocked after your training date and post window opens."
-                  done={r.postComplete}
+                  done={r.postComplete || r.enrollmentStatus === "POST_COMPLETED"}
                   href={(() => {
                     const postOpen = new Date() >= new Date(r.postOpensAt);
                     if (r.assessmentKind === "content") {
@@ -115,6 +115,8 @@ export function MyLearningClient({ rows }: { rows: MyTrainingRow[] }) {
                     return r.postEvaluatorId ? `/assessments/${r.postEvaluatorId}` : undefined;
                   })()}
                   locked={(() => {
+                    const isPostDone = r.postComplete || r.enrollmentStatus === "POST_COMPLETED";
+                    if (isPostDone) return false;
                     const postOpen = new Date() >= new Date(r.postOpensAt);
                     if (r.assessmentKind === "content") {
                       return !r.postAttemptId || !postOpen;
