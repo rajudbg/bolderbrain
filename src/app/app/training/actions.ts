@@ -23,6 +23,9 @@ export type MyTrainingRow = {
   preComplete: boolean;
   postComplete: boolean;
   enrollmentStatus: string;
+  preScores: Record<string, unknown> | null;
+  postScores: Record<string, unknown> | null;
+  delta: TrainingDeltaPayload | null;
 };
 
 export async function listMyTrainingEnrollments(): Promise<MyTrainingRow[]> {
@@ -115,6 +118,9 @@ export async function listMyTrainingEnrollments(): Promise<MyTrainingRow[]> {
       preComplete,
       postComplete,
       enrollmentStatus: e.status,
+      preScores: (e.preScores as Record<string, unknown>) ?? null,
+      postScores: (e.postScores as Record<string, unknown>) ?? null,
+      delta: (e.delta as TrainingDeltaPayload) ?? null,
     });
   }
   return out;

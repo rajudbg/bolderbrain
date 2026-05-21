@@ -129,17 +129,35 @@ export function MyLearningClient({ rows }: { rows: MyTrainingRow[] }) {
               </ol>
             </div>
 
-            {r.postComplete && (
+            {/* Score preview */}
+            {r.delta && (
+              <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-500/[0.04] p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-amber-300/60">Your results</p>
+                <div className="mt-2 flex items-baseline gap-3">
+                  <span className="text-2xl font-bold text-white/90">{typeof r.delta.overall.pre === "number" ? r.delta.overall.pre : "\u2014"}</span>
+                  <span className="text-amber-400 text-lg">\u2192</span>
+                  <span className="text-2xl font-bold text-amber-300">{typeof r.delta.overall.post === "number" ? r.delta.overall.post : "\u2014"}</span>
+                  <span className={cn("ml-1 text-sm font-semibold", (r.delta.overall.percentChange ?? 0) >= 0 ? "text-emerald-400" : "text-red-400")}>
+                    {(r.delta.overall.percentChange ?? 0) >= 0 ? "+" : ""}{r.delta.overall.percentChange ?? 0}%
+                  </span>
+                </div>
+                {r.delta.overall.impact && (
+                  <p className="mt-1 text-xs text-white/50">Impact: {r.delta.overall.impact.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</p>
+                )}
+              </div>
+            )}
+
+            {(r.postComplete || r.enrollmentStatus === "POST_COMPLETED") && (
               <Link
                 href={`/app/training/${r.programId}/results`}
                 className={cn(
-                  "mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/35",
+                  "mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/35",
                   "bg-gradient-to-r from-amber-500/20 to-orange-500/10 py-3 text-sm font-medium text-amber-100",
                   "hover:border-amber-300/50 hover:from-amber-500/30",
                 )}
               >
                 <Sparkles className="size-4" />
-                View my results
+                View detailed results
               </Link>
             )}
           </motion.div>

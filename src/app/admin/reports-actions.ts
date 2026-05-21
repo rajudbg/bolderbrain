@@ -197,27 +197,28 @@ export async function buildTrainingImpactCsv(): Promise<string> {
 
   const header = [
     "name", "email", "program",
-    "pre_score_pct", "post_score_pct", "change_pts",
-    "impact_band", "status", "completed_at",
+    "pre", "post", "delta",
+    "pct_change", "impact", "status", "completed_at",
   ].join(",");
 
   const lines = enrollments.map((e) => {
-    const pre = (e.preScores ?? {}) as Record<string, number>;
-    const post = (e.postScores ?? {}) as Record<string, number>;
-    const prePct = pre.percent ?? null;
-    const postPct = post.percent ?? null;
-    const change = prePct != null && postPct != null ? postPct - prePct : null;
-    const absChange = change != null ? Math.abs(change) : 0;
-    const band = !change ? "none" : absChange >= 20 ? "high" : absChange >= 10 ? "medium" : "low";
+    const d = e.delta as Record<string, unknown> | null;
+    const overall = (d?.overall ?? {}) as Record<string, number>;
+    const pre = overall.pre;
+    const post = overall.post;
+    const delta = overall.delta;
+    const pctChange = overall.percentChange;
+    const impactLabel = String(overall.impact ?? d?.impact ?? "");
 
     return [
       csvEscape(e.user.name),
       csvEscape(e.user.email),
       csvEscape(e.trainingProgram.name),
-      csvNum(prePct, 1),
-      csvNum(postPct, 1),
-      csvNum(change, 1),
-      band,
+      csvNum(pre, 1),
+      csvNum(post, 1),
+      csvNum(delta, 1),
+      csvNum(pctChange, 0),
+      csvEscape(impactLabel),
       e.status,
       csvEscape(e.completedAt?.toISOString()),
     ].join(",");
