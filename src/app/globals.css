@@ -427,68 +427,77 @@
 }
 
 @media print {
-  /* Hide navigation, sidebars, buttons, decorations */
-  nav, aside, header, footer, button, .fixed, .sticky,
+  nav, aside, header, footer, button, [role="tablist"],
+  .fixed, .sticky,
   [class*="backdrop-"], [class*="shadow-"], [class*="glass-"],
-  .border-\[, .rounded-\[, .bg-gradient,
   .notification-bell, .ai-coach {
     display: none !important;
   }
 
-  /* Reset backgrounds to white, text to black */
-  html, body, main, section, div, p, h1, h2, h3, h4, h5, h6,
-  span, li, td, th, a, blockquote, table, [class*="card"] {
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  html, body {
     background: white !important;
-    color: #111 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Ensure tables and data are readable */
+  p, h1, h2, h3, h4, h5, h6, span, li, a, blockquote, label, code, strong, em {
+    color: #1a1a1a !important;
+    background: white !important;
+  }
+
+  h1 { font-size: 24pt !important; margin-bottom: 12pt !important; }
+  h2 { font-size: 16pt !important; margin-top: 18pt !important; margin-bottom: 8pt !important; }
+  h3 { font-size: 13pt !important; margin-top: 14pt !important; }
+  p, li { font-size: 10.5pt !important; line-height: 1.5 !important; }
+
+  div, section, main, article, [class*="card"] {
+    background: white !important;
+    border-color: #e5e5e5 !important;
+  }
+
   table {
     border-collapse: collapse !important;
     width: 100% !important;
   }
-
   th, td {
-    border: 1px solid #ddd !important;
-    padding: 8px !important;
+    border: 1px solid #d0d0d0 !important;
+    padding: 6px 8px !important;
     text-align: left !important;
+    color: #1a1a1a !important;
+    background: white !important;
   }
-
   th {
-    background: #f5f5f5 !important;
+    background: #f8f8f8 !important;
     font-weight: 600 !important;
+    color: #333 !important;
   }
 
-  /* Show only the main content */
+  .bg-\[\#0F0F11\], .bg-\[\#0A0A0E\], .bg-\[\#030305\],
+  [class*="bg-\[\#1"], [class*="bg-\[\#0"],
+  .ai-aurora-bg, [class*="bg-gradient-to"] {
+    background: white !important;
+    background-image: none !important;
+  }
+
   [class*="lg:pl-"], [class*="pl-72"], [class*="ml-"] {
     padding-left: 0 !important;
     margin-left: 0 !important;
     max-width: 100% !important;
   }
 
-  /* Charts and visual elements - keep them visible but simpler */
   svg, canvas, [class*="recharts"] {
     max-width: 100% !important;
     page-break-inside: avoid;
   }
 
-  /* Break rules */
   h2, h3, h4 { page-break-after: avoid; }
   [class*="card"] { page-break-inside: avoid; }
-  table { page-break-inside: avoid; }
-  ul, ol { page-break-inside: avoid; }
+  table, ul, ol { page-break-inside: avoid; }
 
-  /* Remove decorative elements */
-  [class*="blur-"], [class*="opacity-"], [class*="text-white/"] {
-    opacity: 1 !important;
-    color: #111 !important;
-  }
-
-  /* Remove fake backgrounds */
-  .ai-aurora-bg, [class*="bg-gradient-to"] {
-    background: white !important;
-    background-image: none !important;
-  }
+  [class*="opacity-"] { opacity: 1 !important; }
 }
