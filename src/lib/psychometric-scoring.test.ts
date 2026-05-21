@@ -43,7 +43,8 @@ describe('Psychometric Scoring Logic', () => {
     expect(result.traitPercentiles).toHaveProperty('Neuroticism');
 
     // Percentiles are within 0-100 range
-    for (const t of ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism']) {
+    const traits = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'] as const;
+    for (const t of traits) {
       expect(result.traitPercentiles[t]).toBeGreaterThanOrEqual(0);
       expect(result.traitPercentiles[t]).toBeLessThanOrEqual(100);
     }
