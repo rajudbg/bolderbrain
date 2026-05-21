@@ -1,63 +1,13 @@
 "use client";
 
+import { MarkdownRenderer } from "./markdown-renderer";
+
 import { useState } from "react";
-import { MessageSquare, Sparkles, ThumbsDown, ThumbsUp, Quote } from "lucide-react";
+import { MessageSquare, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AIBadge, type AIBadgeVariant } from "./ai-badge";
-
-/* ── Inline markdown renderer (no dependency needed) ── */
-function renderMarkdown(text: string): React.ReactNode[] {
-  // Split by line breaks, process each line
-  return text.split("\n").map((line, lineIdx) => {
-    // Bold: **text** or __text__
-    const formatted: React.ReactNode[] = [];
-    const parts = line.split(/\*\*(.+?)\*\*|__(.+?)__/g);
-    let keyOffset = 0;
-    for (const part of parts) {
-      if (part === undefined) { keyOffset++; continue; }
-      if (!part) { keyOffset++; continue; }
-      // Check if this is a bold-captured group (odd index means captured by **)
-      const isBold = parts.indexOf(part) % 2 === 1 && part.length > 0 && (line.includes("**" + part + "**") || line.includes("__" + part + "__"));
-      if (isBold || (parts.filter(Boolean).indexOf(part) % 2 === 1)) {
-        formatted.push(<strong key={`${lineIdx}-${keyOffset}`} className="font-semibold text-white">{part}</strong>);
-      } else {
-        formatted.push(<span key={`${lineIdx}-${keyOffset}`}>{part}</span>);
-      }
-      keyOffset++;
-    }
-
-    // Bullet point: "- " or "* "
-    if (line.match(/^[-*]\s/)) {
-      return (
-        <div key={lineIdx} className="ml-4 flex items-start gap-2">
-          <span className="mt-1.5 block size-1.5 shrink-0 rounded-full bg-cyan-400/60" />
-          <span className="-ml-2">{formatted}</span>
-        </div>
-      );
-    }
-
-    // Block quote: "> "
-    if (line.startsWith("> ")) {
-      return (
-        <blockquote
-          key={lineIdx}
-          className="my-2 border-l-2 border-cyan-500/40 bg-cyan-500/[0.04] pl-3 py-2 pr-2 rounded-r-lg italic text-white/70"
-        >
-          <Quote className="mb-1 size-3 text-cyan-500/50" />
-          {formatted}
-        </blockquote>
-      );
-    }
-
-    // Empty line: spacer
-    if (line.trim() === "") return <div key={lineIdx} className="h-2" />;
-
-    // Regular text
-    return <p key={lineIdx} className="text-sm leading-relaxed">{formatted.length > 0 ? formatted : line}</p>;
-  });
-}
 
 function badgeVariantFromSource(source: string): AIBadgeVariant {
   if (source === "AI_GENERATED" || source === "AI_NEMOTRON") return "insight";
@@ -157,7 +107,8 @@ export function AIInsightCard({
 
         {/* Insight text with markdown rendering */}
         <div className="relative mb-4 space-y-0.5 text-white/85">
-          {renderMarkdown(displayText)}
+          <MarkdownRenderer content={displayText} />
+
         </div>
 
         {/* Read more toggle */}

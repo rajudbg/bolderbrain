@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getActionOversight } from "@/lib/admin/queries";
 import { requireAdminOrganizationId } from "@/lib/admin/context";
+import { statusLabel as userActionStatusLabel } from "@/lib/ui-labels";
 
 export default async function ActionCenterPage() {
   const orgId = await requireAdminOrganizationId();
@@ -32,7 +33,7 @@ export default async function ActionCenterPage() {
             <ul className="space-y-1">
               {data.byStatus.map((s) => (
                 <li key={s.status}>
-                  <strong>{s.status}</strong>: {s.count}
+                  <strong>{userActionStatusLabel(s.status)}</strong>: {s.count}
                 </li>
               ))}
             </ul>
@@ -64,7 +65,7 @@ export default async function ActionCenterPage() {
                       <div className="text-muted-foreground text-xs">{b.userEmail}</div>
                     </td>
                     <td className="py-2">{b.actionTitle}</td>
-                    <td className="py-2">{b.status}</td>
+                    <td className="py-2">{userActionStatusLabel(b.status)}</td>
                     <td className="py-2 tabular-nums">{new Date(b.assignedAt).toLocaleDateString()}</td>
                   </tr>
                 ))}

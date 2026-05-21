@@ -1,4 +1,5 @@
 "use client";
+import { MarkdownRenderer } from "@/components/ai/markdown-renderer";
 
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
@@ -355,7 +356,7 @@ export function EqResultsView({
               AI-enhanced
             </span>
           </div>
-          <p className="leading-relaxed text-white/70">{result.narrativeText}</p>
+          <MarkdownRenderer content={result.narrativeText} />
         </div>
 
         {prev ? (

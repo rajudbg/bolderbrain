@@ -50,7 +50,7 @@ export default async function UsagePage() {
         <Card>
           <CardHeader>
             <CardTitle>Cost / ROI</CardTitle>
-            <CardDescription>Configured via ASSESSMENT_UNIT_COST_USD</CardDescription>
+            <CardDescription>Assessment unit cost — configurable in environment variables</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>

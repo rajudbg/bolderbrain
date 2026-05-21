@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronDown, Loader2, Send, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MarkdownRenderer } from "./markdown-renderer";
 
 type WorkflowAction = {
   id: string;
@@ -123,7 +124,7 @@ function ChatBubble({ msg }: { msg: Message }) {
             : "rounded-tl-sm border border-white/10 bg-white/[0.06] text-white/90",
         )}
       >
-        {msg.content}
+        <MarkdownRenderer content={msg.content} />
         {label ? <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-white/35">{label}</p> : null}
         {!isUser && msg.actions && msg.actions.length > 0 ? <WorkflowActionChips actions={msg.actions} /> : null}
       </div>

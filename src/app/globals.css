@@ -425,3 +425,70 @@
     animation: none !important;
   }
 }
+
+@media print {
+  /* Hide navigation, sidebars, buttons, decorations */
+  nav, aside, header, footer, button, .fixed, .sticky,
+  [class*="backdrop-"], [class*="shadow-"], [class*="glass-"],
+  .border-\[, .rounded-\[, .bg-gradient,
+  .notification-bell, .ai-coach {
+    display: none !important;
+  }
+
+  /* Reset backgrounds to white, text to black */
+  html, body, main, section, div, p, h1, h2, h3, h4, h5, h6,
+  span, li, td, th, a, blockquote, table, [class*="card"] {
+    background: white !important;
+    color: #111 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Ensure tables and data are readable */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    border: 1px solid #ddd !important;
+    padding: 8px !important;
+    text-align: left !important;
+  }
+
+  th {
+    background: #f5f5f5 !important;
+    font-weight: 600 !important;
+  }
+
+  /* Show only the main content */
+  [class*="lg:pl-"], [class*="pl-72"], [class*="ml-"] {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Charts and visual elements - keep them visible but simpler */
+  svg, canvas, [class*="recharts"] {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Break rules */
+  h2, h3, h4 { page-break-after: avoid; }
+  [class*="card"] { page-break-inside: avoid; }
+  table { page-break-inside: avoid; }
+  ul, ol { page-break-inside: avoid; }
+
+  /* Remove decorative elements */
+  [class*="blur-"], [class*="opacity-"], [class*="text-white/"] {
+    opacity: 1 !important;
+    color: #111 !important;
+  }
+
+  /* Remove fake backgrounds */
+  .ai-aurora-bg, [class*="bg-gradient-to"] {
+    background: white !important;
+    background-image: none !important;
+  }
+}

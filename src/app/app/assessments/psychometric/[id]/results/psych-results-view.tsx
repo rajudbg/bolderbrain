@@ -1,4 +1,5 @@
 "use client";
+import { MarkdownRenderer } from "@/components/ai/markdown-renderer";
 
 import { useMemo, useState } from "react";
 import {
@@ -259,7 +260,7 @@ export function PsychResultsView({
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground leading-relaxed">{result.teamDynamicsText}</p>
+            <MarkdownRenderer content={result.teamDynamicsText} />
           </CardContent>
         </Card>
 
@@ -268,7 +269,7 @@ export function PsychResultsView({
             <CardTitle className="text-base">Career insights & watch-outs</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground leading-relaxed">{result.careerInsightsText}</p>
+            <MarkdownRenderer content={result.careerInsightsText} />
           </CardContent>
         </Card>
       </div>

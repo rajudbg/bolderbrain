@@ -304,3 +304,7 @@ export const questionTypeLabels: Record<string, string> = {
 export function getQuestionTypeLabel(type: string): string {
   return questionTypeLabels[type] ?? type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
 }
+
+export function statusLabel(status: string): string {
+  return status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
+}
