@@ -284,7 +284,7 @@ export function AiCoachChat() {
             aria-label="Open AI coach"
             className={cn(
               "fixed right-4 z-50 flex items-center gap-2 rounded-full",
-              "bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-6 lg:right-6",
+              "bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-6 lg:right-6",
               "bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-3 text-white",
               "shadow-[0_0_32px_rgba(6,182,212,0.35)] hover:shadow-[0_0_48px_rgba(6,182,212,0.50)]",
               "transition-all duration-200 hover:scale-105 active:scale-95",
@@ -306,11 +306,11 @@ export function AiCoachChat() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className={cn(
               "fixed right-3 z-50 flex w-[min(380px,calc(100vw-1.5rem))] flex-col",
-              "bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-6 lg:right-6",
+              "bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:bottom-6 lg:right-6",
               "overflow-hidden rounded-2xl border border-cyan-500/25",
               "bg-[#0A0A0E] shadow-[0_32px_80px_rgba(0,0,0,0.7),0_0_60px_rgba(6,182,212,0.12)]",
             )}
-            style={{ height: "min(480px,calc(100dvh-12rem))" }}
+            style={{ maxHeight: "min(480px,calc(100dvh - 6rem - env(safe-area-inset-bottom, 0px)))", height: "min(480px,calc(100dvh - 6rem - env(safe-area-inset-bottom, 0px)))" }}
           >
             <div className="ai-aurora-bg relative flex items-center gap-3 border-b border-white/10 px-4 py-3">
               <div className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_16px_rgba(6,182,212,0.5)]">
