@@ -263,7 +263,7 @@ export function NewTrainingForm({
                 <SelectItem value={EMPTY_CONTENT}>Select template</SelectItem>
                 {contentTemplates.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
-                    {t.name} ({t._count.questions} questions)
+                    {t.name} ({t._count.questions} questions) — {t.kind === "KNOWLEDGE_TEST" ? "Knowledge" : "Behavioral"}
                   </SelectItem>
                 ))}
               </SelectContent>

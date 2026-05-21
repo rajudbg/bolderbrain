@@ -23,6 +23,7 @@ import { tryFinalizeAssessmentResult } from "@/lib/assessment-360-result";
 import { parseEqScenarioOptions } from "@/lib/eq-question-config";
 import { computeEqAssessmentResult, type EqResponseEntry } from "@/lib/eq-scoring";
 import { computeIqScores } from "@/lib/iq-scoring";
+import { computePsychometricResult, type PsychForcedResponse } from "@/lib/psychometric-scoring";
 import { getIsoWeekKey, previousWeekKey } from "@/lib/iso-week";
 import { DEMO_ORG_SLUG, DEMO_ORG_SLUGS } from "@/lib/demo-constants";
 import prisma from "@/lib/prisma";
@@ -585,7 +586,7 @@ async function seedEqDemo(
   });
 }
 
-async function seedPsychInProgress(
+async function seedPsychCompleted(
   orgId: string,
   userByEmail: Map<string, { id: string }>,
   templateId: string,
@@ -593,23 +594,59 @@ async function seedPsychInProgress(
 ) {
   const qs = await prisma.question.findMany({
     where: { templateId, isActive: true },
-    take: 5,
     orderBy: { sortOrder: "asc" },
   });
   if (qs.length === 0) return;
   const u = userByEmail.get(participantEmail)!;
   const now = new Date();
-  await prisma.psychTestAttempt.create({
+
+  // Build realistic forced-choice responses (most=s0, least=s2 for each triad)
+  const responses: Record<string, PsychForcedResponse> = {};
+  for (const q of qs) {
+    const cfg = (q.config as Record<string, unknown>) ?? {};
+    const stmts = Array.isArray(cfg.statements) ? cfg.statements : [];
+    if (stmts.length >= 2) {
+      responses[q.id] = { mostStatementId: (stmts[0] as { id: string }).id, leastStatementId: (stmts[stmts.length - 1] as { id: string }).id };
+    }
+  }
+
+  const attempt = await prisma.psychTestAttempt.create({
     data: {
       userId: u.id,
       organizationId: orgId,
       templateId,
-      status: PsychAttemptStatus.IN_PROGRESS,
-      startedAt: now,
+      status: PsychAttemptStatus.COMPLETED,
+      startedAt: new Date(now.getTime() - 300000),
+      submittedAt: now,
       questionIds: qs.map((q) => q.id),
-      responses: {},
-      currentPageIndex: 0,
+      responses,
+      currentPageIndex: qs.length,
       lastSavedAt: now,
+      itemTimings: qs.reduce((acc, q) => { acc[q.id] = 3000 + Math.floor(Math.random() * 4000); return acc; }, {} as Record<string, number>),
+    },
+  });
+
+  // Compute psychometric result
+  const psychQuestions = qs.map((q) => ({
+    id: q.id,
+    questionType: q.questionType as Parameters<typeof computePsychometricResult>[0][number]["questionType"],
+    traitCategory: q.traitCategory,
+    reverseScored: q.reverseScored,
+    config: q.config,
+  }));
+  const result = computePsychometricResult(psychQuestions, responses, attempt.itemTimings as Record<string, number>, {});
+
+  await prisma.psychTestResult.create({
+    data: {
+      attemptId: attempt.id,
+      traitPercentiles: result.traitPercentiles,
+      rawTraitSums: result.rawTraitSums,
+      validityFlags: result.validityFlags,
+      roleMatches: result.roleMatches,
+      teamDynamicsText: result.teamDynamicsText,
+      careerInsightsText: result.careerInsightsText,
+      summaryLine: result.summaryLine,
+      radarPayload: result.radarPayload,
     },
   });
 }
@@ -1088,6 +1125,80 @@ export async function seedGlobalDemoTrainingContentTemplates(): Promise<void> {
       },
     },
   });
+
+  // Behavioral test template — Likert self-assessment for leadership/communication
+  const btName = "Demo: Leadership Behaviors (sample)";
+  const btExisting = await prisma.trainingContentTemplate.findFirst({ where: { organizationId: null, name: btName } });
+  if (!btExisting) {
+    await prisma.trainingContentTemplate.create({
+      data: {
+        organizationId: null,
+        kind: TrainingContentTemplateKind.BEHAVIORAL_TEST,
+        name: btName,
+        description: "Sample behavioral self-assessment with Likert-scale questions on leadership and communication.",
+        minQuestions: 3, maxQuestions: 20, defaultQuestionCount: 6,
+        hasTimer: false, timeLimitMinutes: 0, defaultOptionCount: 5, isPublished: true,
+        questions: {
+          create: [
+            { text: "I actively listen and consider others' perspectives before making a decision.", type: TrainingContentQuestionType.LIKERT_5_SCALE, competencyKey: "leadership", sortOrder: 0, points: 1, minOptions: 5, maxOptions: 5, reverseScored: false,
+              options: { create: [
+                { id: randomUUID(), text: "Strongly Disagree", sortOrder: 0, value: 1 },
+                { id: randomUUID(), text: "Disagree", sortOrder: 1, value: 2 },
+                { id: randomUUID(), text: "Neutral", sortOrder: 2, value: 3 },
+                { id: randomUUID(), text: "Agree", sortOrder: 3, value: 4 },
+                { id: randomUUID(), text: "Strongly Agree", sortOrder: 4, value: 5 },
+              ]},
+            },
+            { text: "I provide clear goals and expectations to my team.", type: TrainingContentQuestionType.LIKERT_5_SCALE, competencyKey: "leadership", sortOrder: 1, points: 1, minOptions: 5, maxOptions: 5, reverseScored: false,
+              options: { create: [
+                { id: randomUUID(), text: "Strongly Disagree", sortOrder: 0, value: 1 },
+                { id: randomUUID(), text: "Disagree", sortOrder: 1, value: 2 },
+                { id: randomUUID(), text: "Neutral", sortOrder: 2, value: 3 },
+                { id: randomUUID(), text: "Agree", sortOrder: 3, value: 4 },
+                { id: randomUUID(), text: "Strongly Agree", sortOrder: 4, value: 5 },
+              ]},
+            },
+            { text: "I communicate complex ideas in simple and clear terms.", type: TrainingContentQuestionType.LIKERT_5_SCALE, competencyKey: "communication", sortOrder: 2, points: 1, minOptions: 5, maxOptions: 5, reverseScored: false,
+              options: { create: [
+                { id: randomUUID(), text: "Strongly Disagree", sortOrder: 0, value: 1 },
+                { id: randomUUID(), text: "Disagree", sortOrder: 1, value: 2 },
+                { id: randomUUID(), text: "Neutral", sortOrder: 2, value: 3 },
+                { id: randomUUID(), text: "Agree", sortOrder: 3, value: 4 },
+                { id: randomUUID(), text: "Strongly Agree", sortOrder: 4, value: 5 },
+              ]},
+            },
+            { text: "I adapt my communication style based on my audience.", type: TrainingContentQuestionType.LIKERT_5_SCALE, competencyKey: "communication", sortOrder: 3, points: 1, minOptions: 5, maxOptions: 5, reverseScored: false,
+              options: { create: [
+                { id: randomUUID(), text: "Strongly Disagree", sortOrder: 0, value: 1 },
+                { id: randomUUID(), text: "Disagree", sortOrder: 1, value: 2 },
+                { id: randomUUID(), text: "Neutral", sortOrder: 2, value: 3 },
+                { id: randomUUID(), text: "Agree", sortOrder: 3, value: 4 },
+                { id: randomUUID(), text: "Strongly Agree", sortOrder: 4, value: 5 },
+              ]},
+            },
+            { text: "I take ownership of challenges rather than avoiding them.", type: TrainingContentQuestionType.LIKERT_5_SCALE, competencyKey: "leadership", sortOrder: 4, points: 1, minOptions: 5, maxOptions: 5, reverseScored: true,
+              options: { create: [
+                { id: randomUUID(), text: "Rarely", sortOrder: 0, value: 1 },
+                { id: randomUUID(), text: "Sometimes", sortOrder: 1, value: 2 },
+                { id: randomUUID(), text: "Often", sortOrder: 2, value: 3 },
+                { id: randomUUID(), text: "Usually", sortOrder: 3, value: 4 },
+                { id: randomUUID(), text: "Always", sortOrder: 4, value: 5 },
+              ]},
+            },
+            { text: "How frequently do you seek and act on constructive feedback?", type: TrainingContentQuestionType.LIKERT_FREQUENCY, competencyKey: "communication", sortOrder: 5, points: 1, minOptions: 5, maxOptions: 5, reverseScored: false,
+              options: { create: [
+                { id: randomUUID(), text: "Never", sortOrder: 0, value: 1 },
+                { id: randomUUID(), text: "Rarely", sortOrder: 1, value: 2 },
+                { id: randomUUID(), text: "Sometimes", sortOrder: 2, value: 3 },
+                { id: randomUUID(), text: "Often", sortOrder: 3, value: 4 },
+                { id: randomUUID(), text: "Always", sortOrder: 4, value: 5 },
+              ]},
+            },
+          ],
+        },
+      },
+    });
+  }
 }
 
 async function seedManualActions(
@@ -1271,9 +1382,147 @@ export async function seedDemoOrganization(): Promise<void> {
 
     await seedIqDemo(org.id, userByEmail, iqTid, { demo: cfg.demoEmail, eng2: cfg.eng2Email });
     await seedEqDemo(org.id, userByEmail, eqTid, cfg.demoEmail);
-    await seedPsychInProgress(org.id, userByEmail, psychTid, cfg.psychParticipantEmail);
+    await seedPsychCompleted(org.id, userByEmail, psychTid, cfg.psychParticipantEmail);
     await seedManualActions(org.id, userByEmail, competencyBundles, cfg.manualPairs);
+
+    if (cfg.slug === "acme-demo") {
+      await seedDemoTrainingProgram(org.id, userByEmail);
+    }
   }
 
   await seedGlobalDemoTrainingContentTemplates();
+}
+
+async function seedDemoTrainingProgram(orgId: string, userByEmail: Map<string, { id: string }>) {
+  const contentTemplate = await prisma.trainingContentTemplate.findFirst({
+    where: { organizationId: null, name: "Demo: Excel Skills (sample)" },
+  });
+  if (!contentTemplate) return;
+
+  const now = new Date();
+  const preOpensAt = new Date(now.getTime() - 14 * 86400000);
+  const preClosesAt = new Date(now.getTime() - 7 * 86400000);
+  const trainingDate = new Date(now.getTime() - 5 * 86400000);
+  const postOpensAt = new Date(now.getTime() - 3 * 86400000);
+  const postClosesAt = new Date(now.getTime() + 7 * 86400000);
+
+  const program = await prisma.trainingProgram.upsert({
+    where: { id: `demo-program-${orgId}` },
+    create: {
+      id: `demo-program-${orgId}`,
+      organizationId: orgId,
+      name: "Excel Skills Workshop",
+      description: "Hands-on training covering formulas, pivot tables, and data analysis fundamentals.",
+      trainingContentTemplateId: contentTemplate.id,
+      questionPoolCount: 5,
+      timerOverrideMinutes: 20,
+      passThresholdPercent: 70,
+      preOpensAt,
+      preClosesAt,
+      trainingDate,
+      postOpensAt,
+      postClosesAt,
+      status: "ACTIVE" as const,
+      attendanceExpected: 12,
+      attendanceCount: 10,
+    },
+    update: {},
+  });
+
+  function makeKnowledgeDelta(pre: number, post: number) {
+    const d = post - pre;
+    const pct = pre > 0 ? Math.round((d / pre) * 100) : 0;
+    const band = d > 20 ? "TRANSFORMATIVE" as const : d > 10 ? "SIGNIFICANT" as const : d > 5 ? "MODERATE" as const : "MAINTAINED" as const;
+    return { overall: { pre, post, delta: d, percentChange: pct, impact: band }, byCompetency: [] as never[] };
+  }
+
+  function makeBehavioralDelta(pre: number, post: number) {
+    const d = Number((post - pre).toFixed(1));
+    const pct = pre > 0 ? Math.round((d / pre) * 100) : 0;
+    const band = d > 0.8 ? "TRANSFORMATIVE" as const : d > 0.4 ? "SIGNIFICANT" as const : d > 0.1 ? "MODERATE" as const : "MAINTAINED" as const;
+    return {
+      overall: { pre, post, delta: d, percentChange: pct, impact: band },
+      byCompetency: [
+        { competencyKey: "leadership", pre: +(pre + 0.3).toFixed(1), post: +(post + 0.4).toFixed(1), delta: +(d + 0.1).toFixed(1), percentChange: pct + 3, impact: band },
+        { competencyKey: "communication", pre: +(pre - 0.2).toFixed(1), post: +(post + 0.1).toFixed(1), delta: +(d + 0.3).toFixed(1), percentChange: pct + 8, impact: band },
+      ],
+    };
+  }
+
+  // Knowledge test enrollments
+  const participants = ["demo@acme.com", "eng2@acme.com", "eng3@acme.com", "sales1@acme.com", "sales2@acme.com"];
+  for (const email of participants) {
+    const u = userByEmail.get(email);
+    if (!u) continue;
+    const prePct = 60 + Math.floor(Math.random() * 20);
+    const postPct = 80 + Math.floor(Math.random() * 15);
+    await prisma.trainingEnrollment.upsert({
+      where: { trainingProgramId_userId: { trainingProgramId: program.id, userId: u.id } },
+      create: {
+        trainingProgramId: program.id,
+        userId: u.id,
+        status: "POST_COMPLETED" as const,
+        preScores: { percent: prePct },
+        postScores: { percent: postPct },
+        delta: makeKnowledgeDelta(prePct, postPct) as object,
+        completedAt: now,
+      },
+      update: {},
+    });
+  }
+
+  // Behavioral test program + enrollments
+  const behavioral = await prisma.trainingContentTemplate.findFirst({
+    where: { organizationId: null, name: "Demo: Leadership Behaviors (sample)" },
+  });
+  if (behavioral) {
+    const bPreOpensAt = new Date(now.getTime() - 14 * 86400000);
+    const bPreClosesAt = new Date(now.getTime() - 7 * 86400000);
+    const bTrainingDate = new Date(now.getTime() - 5 * 86400000);
+    const bPostOpensAt = new Date(now.getTime() - 3 * 86400000);
+    const bPostClosesAt = new Date(now.getTime() + 7 * 86400000);
+
+    const bProgram = await prisma.trainingProgram.upsert({
+      where: { id: `demo-behavioral-${orgId}` },
+      create: {
+        id: `demo-behavioral-${orgId}`,
+        organizationId: orgId,
+        name: "Leadership Behaviors Workshop",
+        description: "Self-assessment of leadership and communication competencies using behavioral Likert scales.",
+        trainingContentTemplateId: behavioral.id,
+        questionPoolCount: 5,
+        passThresholdPercent: 0,
+        preOpensAt: bPreOpensAt,
+        preClosesAt: bPreClosesAt,
+        trainingDate: bTrainingDate,
+        postOpensAt: bPostOpensAt,
+        postClosesAt: bPostClosesAt,
+        status: "ACTIVE" as const,
+        attendanceExpected: 8,
+        attendanceCount: 7,
+      },
+      update: {},
+    });
+
+    const bEnrollees = ["demo@acme.com", "eng2@acme.com", "sales1@acme.com", "lead1@acme.com"];
+    for (const email of bEnrollees) {
+      const u = userByEmail.get(email);
+      if (!u) continue;
+      const pre = +(2.8 + Math.random() * 1.2).toFixed(1);
+      const post = +(3.5 + Math.random() * 1.0).toFixed(1);
+      await prisma.trainingEnrollment.upsert({
+        where: { trainingProgramId_userId: { trainingProgramId: bProgram.id, userId: u.id } },
+        create: {
+          trainingProgramId: bProgram.id,
+          userId: u.id,
+          status: "POST_COMPLETED" as const,
+          preScores: { overall: pre, byCompetency: { leadership: +(pre + 0.3).toFixed(1), communication: +(pre - 0.2).toFixed(1) } },
+          postScores: { overall: post, byCompetency: { leadership: +(post + 0.4).toFixed(1), communication: +(post + 0.1).toFixed(1) } },
+          delta: makeBehavioralDelta(pre, post) as object,
+          completedAt: now,
+        },
+        update: {},
+      });
+    }
+  }
 }

@@ -42,16 +42,6 @@ export type AssessmentTemplateDTO = {
   isActive: boolean;
 };
 
-function stringifyConfig(config: unknown): string {
-  if (config == null) return "";
-  if (typeof config === "object" && config !== null && Object.keys(config as object).length === 0) return "";
-  try {
-    return JSON.stringify(config, null, 2);
-  } catch {
-    return "";
-  }
-}
-
 type OrgOption = { id: string; name: string; slug: string };
 
 const TEMPLATE_TYPES: AssessmentTemplateType[] = [
@@ -94,10 +84,31 @@ export function TemplateFormDialog({
   const [key, setKey] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [configJson, setConfigJson] = useState("");
+  const [scaleMin, setScaleMin] = useState(1);
+  const [scaleMax, setScaleMax] = useState(5);
   const [sortOrder, setSortOrder] = useState(0);
   const [isActive, setIsActive] = useState(true);
   const [pending, setPending] = useState(false);
+
+  function parseScaleFromConfig(config: unknown): { min: number; max: number } {
+    const o = (config && typeof config === "object" ? config : {}) as Record<string, unknown>;
+    const scale = (o.scale as Record<string, unknown>) ?? {};
+    return {
+      min: typeof scale.min === "number" ? scale.min : 1,
+      max: typeof scale.max === "number" ? scale.max : 5,
+    };
+  }
+
+  function buildConfigJson(): string {
+    if (type === AssessmentTemplateType.BEHAVIORAL_360) {
+      return JSON.stringify({ scale: { min: scaleMin, max: scaleMax } });
+    }
+    return "";
+  }
+
+  function slugify(text: string): string {
+    return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 60);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -108,7 +119,9 @@ export function TemplateFormDialog({
       setKey(template.key);
       setName(template.name);
       setDescription(template.description ?? "");
-      setConfigJson(stringifyConfig(template.config));
+      const sc = parseScaleFromConfig(template.config);
+      setScaleMin(sc.min);
+      setScaleMax(sc.max);
       setSortOrder(template.sortOrder);
       setIsActive(template.isActive);
     } else {
@@ -118,7 +131,8 @@ export function TemplateFormDialog({
       setKey("");
       setName("");
       setDescription("");
-      setConfigJson("");
+      setScaleMin(1);
+      setScaleMax(5);
       setSortOrder(0);
       setIsActive(true);
     }
@@ -165,10 +179,10 @@ export function TemplateFormDialog({
           organizationId,
           type,
           scoringStrategy,
-          key,
+          key: key || slugify(name),
           name,
           description: description || undefined,
-          configJson: configJson || undefined,
+          configJson: buildConfigJson() || undefined,
           sortOrder,
           isActive,
         });
@@ -178,10 +192,10 @@ export function TemplateFormDialog({
           id: template.id,
           type,
           scoringStrategy,
-          key,
+          key: key || template.key,
           name,
           description: description || undefined,
-          configJson: configJson || undefined,
+          configJson: buildConfigJson() || undefined,
           sortOrder,
           isActive,
         });
@@ -281,38 +295,35 @@ export function TemplateFormDialog({
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="t-key">Key</Label>
-                <Input id="t-key" value={key} onChange={(e) => setKey(e.target.value)} required placeholder="360-leadership" />
+                <Label htmlFor="t-name">Name</Label>
+                <Input id="t-name" value={name} onChange={(e) => { setName(e.target.value); if (mode === "create") setKey(slugify(e.target.value)); }} required placeholder="Leadership 360" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="t-sort">Sort order</Label>
-                <Input
-                  id="t-sort"
-                  type="number"
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(Number.parseInt(e.target.value, 10) || 0)}
-                />
+                <Input id="t-sort" type="number" value={sortOrder} onChange={(e) => setSortOrder(Number.parseInt(e.target.value, 10) || 0)} />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="t-name">Name</Label>
-              <Input id="t-name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Leadership 360" />
+              <Label htmlFor="t-key">Key</Label>
+              <Input id="t-key" value={key || slugify(name)} onChange={(e) => setKey(e.target.value)} placeholder="auto-generated-from-name" />
+              <p className="text-white/30 text-xs">Auto-generated from name — edit only if needed.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="t-desc">Description</Label>
               <Textarea id="t-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="t-config">Config (JSON)</Label>
-              <Textarea
-                id="t-config"
-                value={configJson}
-                onChange={(e) => setConfigJson(e.target.value)}
-                placeholder='{ "scale": { "min": 1, "max": 5 } }'
-                rows={5}
-                className="font-mono text-xs"
-              />
-            </div>
+            {type === AssessmentTemplateType.BEHAVIORAL_360 && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="t-smin">Scale minimum</Label>
+                  <Input id="t-smin" type="number" min={1} max={10} value={scaleMin} onChange={(e) => setScaleMin(Number.parseInt(e.target.value, 10) || 1)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="t-smax">Scale maximum</Label>
+                  <Input id="t-smax" type="number" min={1} max={10} value={scaleMax} onChange={(e) => setScaleMax(Number.parseInt(e.target.value, 10) || 5)} />
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <Checkbox id="t-active" checked={isActive} onCheckedChange={(v) => setIsActive(v === true)} />
               <Label htmlFor="t-active" className="font-normal">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -41,22 +41,43 @@ export type OrganizationRow = {
   createdAt: Date;
 };
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+}
+
 export function OrganizationsTable({ organizations }: { organizations: OrganizationRow[] }) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createSlug, setCreateSlug] = useState("");
   const [editRow, setEditRow] = useState<OrganizationRow | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editSlug, setEditSlug] = useState("");
   const [deleteRow, setDeleteRow] = useState<OrganizationRow | null>(null);
   const [pending, setPending] = useState(false);
+  const slugTouched = useRef(false);
 
-  async function handleCreate(formData: FormData) {
+  const onNameChange = useCallback((name: string, setSlug: (s: string) => void) => {
+    if (!slugTouched.current) {
+      setSlug(slugify(name));
+    }
+  }, []);
+
+  async function handleCreate() {
     setPending(true);
     try {
-      await createOrganization({
-        name: String(formData.get("name") ?? ""),
-        slug: String(formData.get("slug") ?? ""),
-      });
+      await createOrganization({ name: createName.trim(), slug: createSlug.trim() });
       toast.success("Organization created");
       setCreateOpen(false);
+      setCreateName("");
+      setCreateSlug("");
+      slugTouched.current = false;
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to create");
@@ -65,15 +86,11 @@ export function OrganizationsTable({ organizations }: { organizations: Organizat
     }
   }
 
-  async function handleEdit(formData: FormData) {
+  async function handleEdit() {
     if (!editRow) return;
     setPending(true);
     try {
-      await updateOrganization({
-        id: editRow.id,
-        name: String(formData.get("name") ?? ""),
-        slug: String(formData.get("slug") ?? ""),
-      });
+      await updateOrganization({ id: editRow.id, name: editName.trim(), slug: editSlug.trim() });
       toast.success("Organization updated");
       setEditRow(null);
       router.refresh();
@@ -143,7 +160,7 @@ export function OrganizationsTable({ organizations }: { organizations: Organizat
                         size="icon-sm"
                         type="button"
                         className="text-white/40 hover:bg-transparent hover:text-white/90"
-                        onClick={() => setEditRow(org)}
+                        onClick={() => { setEditRow(org); setEditName(org.name); setEditSlug(org.slug); slugTouched.current = true; }}
                         aria-label="Edit"
                       >
                         <Pencil className="size-4" />
@@ -167,26 +184,32 @@ export function OrganizationsTable({ organizations }: { organizations: Organizat
         </Table>
       </div>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) { setCreateName(""); setCreateSlug(""); slugTouched.current = false; } }}>
         <DialogContent className="sm:max-w-md">
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              await handleCreate(new FormData(e.currentTarget));
+              await handleCreate();
             }}
           >
             <DialogHeader>
               <DialogTitle>Create organization</DialogTitle>
-              <DialogDescription>Slug is used in URLs and must be unique (lowercase, hyphens).</DialogDescription>
+              <DialogDescription>Slug auto-generates from name — edit only if needed.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="create-name">Name</Label>
-                <Input id="create-name" name="name" required placeholder="Acme Corp" />
+                <Input id="create-name" name="name" required placeholder="Acme Corp"
+                  value={createName}
+                  onChange={(e) => { setCreateName(e.target.value); onNameChange(e.target.value, setCreateSlug); }}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="create-slug">Slug</Label>
-                <Input id="create-slug" name="slug" required placeholder="acme-corp" />
+                <Input id="create-slug" name="slug" required placeholder="acme-corp"
+                  value={createSlug}
+                  onChange={(e) => { setCreateSlug(e.target.value); slugTouched.current = true; }}
+                />
               </div>
             </div>
             <DialogFooter>
@@ -201,15 +224,10 @@ export function OrganizationsTable({ organizations }: { organizations: Organizat
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!editRow} onOpenChange={(o) => !o && setEditRow(null)}>
+      <Dialog open={!!editRow} onOpenChange={(o) => { if (!o) setEditRow(null); }}>
         <DialogContent className="sm:max-w-md">
           {editRow && (
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                await handleEdit(new FormData(e.currentTarget));
-              }}
-            >
+            <form onSubmit={async (e) => { e.preventDefault(); await handleEdit(); }}>
               <DialogHeader>
                 <DialogTitle>Edit organization</DialogTitle>
                 <DialogDescription>Updating {editRow.name}.</DialogDescription>
@@ -217,11 +235,15 @@ export function OrganizationsTable({ organizations }: { organizations: Organizat
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-name">Name</Label>
-                  <Input id="edit-name" name="name" required defaultValue={editRow.name} />
+                  <Input id="edit-name" name="name" required defaultValue={editRow.name}
+                    onChange={(e) => { setEditName(e.target.value); onNameChange(e.target.value, setEditSlug); }}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-slug">Slug</Label>
-                  <Input id="edit-slug" name="slug" required defaultValue={editRow.slug} />
+                  <Input id="edit-slug" name="slug" required defaultValue={editRow.slug}
+                    onChange={(e) => { setEditSlug(e.target.value); slugTouched.current = true; }}
+                  />
                 </div>
               </div>
               <DialogFooter>

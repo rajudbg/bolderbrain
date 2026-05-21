@@ -193,6 +193,7 @@ export async function createQuestion(input: {
   isActive: boolean;
 }) {
   await requirePlatformSuperAdmin();
+  const resolvedKey = input.key.trim() || `q-${input.sortOrder || Date.now()}`;
   const data = z
     .object({
       organizationId: z.string().min(1),
@@ -222,7 +223,7 @@ export async function createQuestion(input: {
     data: {
       organizationId: data.organizationId,
       templateId: data.templateId,
-      key: data.key.trim(),
+      key: resolvedKey.trim() || data.key.trim(),
       questionType: data.questionType,
       config: parseConfigJson(data.configJson) ?? undefined,
       correctOptionId: data.correctOptionId?.trim() || null,

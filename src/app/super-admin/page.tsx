@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import prisma from "@/lib/prisma";
 import { requirePlatformSuperAdmin } from "@/lib/super-admin-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ResetDemoButton } from "./reset-demo-button";
+import { ResetDemoButton, SeedDemoButton } from "./reset-demo-button";
 import { SuperAdminSkeleton } from "@/components/ui/skeleton-loading";
 import { AiConnectionTestCard } from "@/components/profile/ai-connection-test";
 import { testAiConnectionSuperAdmin } from "@/app/actions/ai-connection";
@@ -37,11 +37,12 @@ async function SuperAdminContent() {
         <CardHeader>
           <CardTitle className="text-lg">Pilot demo dataset</CardTitle>
           <CardDescription>
-            Recreates the Acme Corp tenant (slug acme-demo), demo users,
-            completed 360s, IQ/EQ sessions, and sample actions. Same as npm run seed:demo.
+            Populates demo tenants (acme-demo, beta-demo, gamma-demo, delta-demo) with users,
+            completed 360s, IQ, EQ, psychometric results, and training programs.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-wrap gap-3">
+          <SeedDemoButton />
           <ResetDemoButton />
         </CardContent>
       </Card>

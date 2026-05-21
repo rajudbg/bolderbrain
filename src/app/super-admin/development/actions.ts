@@ -40,13 +40,18 @@ const competencySchema = z.object({
   sortOrder: z.coerce.number().int(),
 });
 
+function autoKey(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").slice(0, 60);
+}
+
 export async function createCompetency(input: z.infer<typeof competencySchema>) {
   await requirePlatformSuperAdmin();
   const data = competencySchema.parse(input);
+  const resolvedKey = data.key.trim() || autoKey(data.name);
   await prisma.competency.create({
     data: {
       organizationId: data.organizationId,
-      key: data.key.trim(),
+      key: resolvedKey,
       name: data.name.trim(),
       description: data.description ? sanitizeRichText(data.description.trim()) || null : null,
       sortOrder: data.sortOrder,

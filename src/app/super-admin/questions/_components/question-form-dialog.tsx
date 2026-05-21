@@ -604,20 +604,14 @@ export function QuestionFormDialog({
               </Select>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="q-key">Key</Label>
-                <Input id="q-key" value={key} onChange={(e) => setKey(e.target.value)} required placeholder="q1" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="q-sort">Sort order</Label>
-                <Input
-                  id="q-sort"
-                  type="number"
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(Number.parseInt(e.target.value, 10) || 0)}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="q-sort">Sort order</Label>
+              <Input id="q-sort" type="number" value={sortOrder} onChange={(e) => setSortOrder(Number.parseInt(e.target.value, 10) || 0)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="q-key">Key</Label>
+              <Input id="q-key" value={key} onChange={(e) => setKey(e.target.value)} required placeholder={`q${sortOrder + 1}`} />
+              <p className="text-white/30 text-xs">Auto-suggested from sort order — edit if needed.</p>
             </div>
 
             <div className="space-y-2">
