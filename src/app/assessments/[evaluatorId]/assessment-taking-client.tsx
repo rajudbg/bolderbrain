@@ -49,7 +49,7 @@ function SegmentedLikert({
     <div className="space-y-2">
       <div
         role="radiogroup"
-        className="flex w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-1 shadow-inner"
+        className="flex w-full max-w-xl overflow-hidden rounded-2xl border border-white/15 bg-white/[0.06] p-1 shadow-inner shadow-black/30"
       >
         {[1, 2, 3, 4, 5].map((n) => {
           const selected = value === n;
@@ -62,7 +62,7 @@ function SegmentedLikert({
               disabled={disabled}
               onClick={() => onChange(n)}
               className={cn(
-                "relative min-h-11 flex-1 py-2.5 text-sm font-semibold tabular-nums transition-all duration-300",
+                "relative min-h-12 flex-1 py-3 text-sm font-semibold tabular-nums transition-all duration-300",
                 selected ? "text-white" : "text-white/45 hover:text-white/75",
                 disabled && "opacity-60",
               )}
@@ -78,7 +78,7 @@ function SegmentedLikert({
           );
         })}
       </div>
-      <p className="text-caption-cerebral flex justify-between text-[10px] uppercase">
+      <p className="text-label flex justify-between">
         <span>Low</span>
         <span>High</span>
       </p>
@@ -232,8 +232,8 @@ export function AssessmentTakingClient({ initial }: { initial: TakingPayload }) 
             exit={{ opacity: 0, y: -12 }}
             transition={{ type: "spring", stiffness: 380, damping: 32 }}
           >
-            <GlassCard className="p-6 md:p-8">
-              <p className="text-caption-cerebral mb-2">{current.competencyKey}</p>
+            <GlassCard className="p-8 md:p-10">
+              <p className="text-label mb-2">{current.competencyKey}</p>
               <Label className="font-heading mb-6 block text-lg font-semibold leading-snug text-white/90">
                 {current.prompt}
               </Label>
