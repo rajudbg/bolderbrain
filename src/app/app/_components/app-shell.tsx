@@ -103,13 +103,13 @@ function NavLinks({
             href={href}
             onClick={onNavigate}
             className={cn(
-              "focus-visible:ring-purple-500/50 flex items-center gap-3 rounded-r-xl border-l-2 py-3 pr-3 pl-4 text-sm font-medium transition-all duration-300 focus-visible:ring-2 focus-visible:outline-none",
+              "focus-visible:ring-blue-500/50 mx-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2",
               active
-                ? "border-indigo-500 bg-white/5 text-white shadow-[0_0_24px_rgba(99,102,241,0.18)]"
-                : "border-transparent text-white/40 hover:bg-white/[0.04] hover:text-white/80",
+                ? "bg-white/[0.08] text-white"
+                : "text-white/45 hover:bg-white/[0.04] hover:text-white/80",
             )}
           >
-            <Icon className={cn("size-4 shrink-0", active ? "text-indigo-400" : "text-white/40")} />
+            <Icon className={cn("size-4 shrink-0 transition-colors", active ? "text-blue-400" : "text-white/40")} />
             {label}
           </Link>
         );
@@ -139,7 +139,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-[#0F0F11] text-white/90">
       {/* Desktop command bar -- glass sidebar */}
-      <aside className="border-border/60 fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-white/[0.05] bg-[#0F0F11]/80 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#0F0F11]/75 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-white/[0.08] bg-black/20 backdrop-blur-[24px] lg:flex">
         <div className="flex h-16 items-center border-b border-white/[0.06] px-6">
           <Link href="/app/dashboard" className="font-heading text-xl font-semibold tracking-tight text-gradient-heading">
             BolderBrain
@@ -171,7 +171,7 @@ export function AppShell({
 
       <div className="lg:pl-72">
         {/* Mobile header */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-white/[0.06] bg-[#0F0F11]/70 px-4 shadow-sm backdrop-blur-md lg:hidden">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-white/[0.08] bg-black/20 px-4 backdrop-blur-[24px] lg:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
             <Button
               variant="ghost"
@@ -183,7 +183,7 @@ export function AppShell({
             >
               <Menu className="size-5" />
             </Button>
-            <SheetContent side="left" className="w-72 border-white/10 bg-[#1A1A1E]/95 p-0 backdrop-blur-xl">
+            <SheetContent side="left" className="w-72 border-white/[0.08] bg-[#0A0A0A]/95 p-0 backdrop-blur-[24px]">
               <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
                 <span className="font-heading font-semibold text-white">Menu</span>
                 <Button
@@ -212,13 +212,13 @@ export function AppShell({
                         href={href}
                         onClick={closeSheet}
                         className={cn(
-                          "focus-visible:ring-purple-500/50 flex items-center gap-3 rounded-r-xl border-l-2 py-3 pr-3 pl-4 text-sm font-medium transition-all duration-300 focus-visible:ring-2 focus-visible:outline-none",
+                          "focus-visible:ring-blue-500/50 mx-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2",
                           active
-                            ? "border-indigo-500 bg-white/5 text-white shadow-[0_0_24px_rgba(99,102,241,0.18)]"
-                            : "border-transparent text-white/40 hover:bg-white/[0.04] hover:text-white/80",
+                            ? "bg-white/[0.08] text-white"
+                            : "text-white/45 hover:bg-white/[0.04] hover:text-white/80",
                         )}
                       >
-                        <Icon className={cn("size-4 shrink-0", active ? "text-indigo-400" : "text-white/40")} />
+                        <Icon className={cn("size-4 shrink-0 transition-colors", active ? "text-blue-400" : "text-white/40")} />
                         {label}
                       </Link>
                     );
