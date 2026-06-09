@@ -16,6 +16,11 @@ import {
   Clock,
   Globe,
   Workflow,
+  Palette,
+  UserCheck,
+  BellRing,
+  LayoutTemplate,
+  Terminal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -115,7 +120,32 @@ const platformFeatures = [
   {
     icon: Workflow,
     title: "HRIS Integration",
-    description: "Connect with your existing HR stack via API and webhooks.",
+    description: "Connect with your existing HR stack via pre-built connectors.",
+  },
+  {
+    icon: Palette,
+    title: "Custom Branding",
+    description: "Match your company's visual identity with custom logos, colors, and domains.",
+  },
+  {
+    icon: UserCheck,
+    title: "Role-Based Access",
+    description: "Granular permissions for admins, managers, and employees to ensure data privacy.",
+  },
+  {
+    icon: BellRing,
+    title: "Automated Reminders",
+    description: "Set-and-forget notification workflows via email and Slack to drive completion.",
+  },
+  {
+    icon: LayoutTemplate,
+    title: "Custom Builder",
+    description: "Create proprietary assessments using our intuitive drag-and-drop builder.",
+  },
+  {
+    icon: Terminal,
+    title: "Developer API",
+    description: "Build custom integrations and extract data securely with our REST API.",
   },
 ];
 
