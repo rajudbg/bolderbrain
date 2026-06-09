@@ -103,7 +103,7 @@ function NavLinks({
             href={href}
             onClick={onNavigate}
             className={cn(
-              "focus-visible:ring-purple-500/50 flex items-center gap-3 rounded-r-xl border-l-2 py-2.5 pr-3 pl-3 text-sm font-medium transition-all duration-300 focus-visible:ring-2 focus-visible:outline-none",
+              "focus-visible:ring-purple-500/50 flex items-center gap-3 rounded-r-xl border-l-2 py-3 pr-3 pl-4 text-sm font-medium transition-all duration-300 focus-visible:ring-2 focus-visible:outline-none",
               active
                 ? "border-indigo-500 bg-white/5 text-white shadow-[0_0_24px_rgba(99,102,241,0.18)]"
                 : "border-transparent text-white/40 hover:bg-white/[0.04] hover:text-white/80",
@@ -141,12 +141,12 @@ export function AppShell({
       {/* Desktop command bar -- glass sidebar */}
       <aside className="border-border/60 fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-white/[0.05] bg-[#0F0F11]/80 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#0F0F11]/75 lg:flex">
         <div className="flex h-16 items-center border-b border-white/[0.06] px-6">
-          <Link href="/app/dashboard" className="font-heading text-lg font-semibold tracking-tight text-gradient-heading">
+          <Link href="/app/dashboard" className="font-heading text-xl font-semibold tracking-tight text-gradient-heading">
             BolderBrain
           </Link>
         </div>
         <div className="flex flex-1 flex-col px-3 py-4">
-          <p className="text-caption-cerebral mb-2 px-3">Navigate</p>
+          <p className="text-label mb-3 px-3">Navigate</p>
           <NavLinks showAdminLink={showAdminLink} showManagerLink={showManagerLink} />
         </div>
         <div className="space-y-3 border-t border-white/[0.06] p-4">
@@ -212,7 +212,7 @@ export function AppShell({
                         href={href}
                         onClick={closeSheet}
                         className={cn(
-                          "focus-visible:ring-purple-500/50 flex items-center gap-3 rounded-r-xl border-l-2 py-2.5 pr-3 pl-3 text-sm font-medium transition-all duration-300 focus-visible:ring-2 focus-visible:outline-none",
+                          "focus-visible:ring-purple-500/50 flex items-center gap-3 rounded-r-xl border-l-2 py-3 pr-3 pl-4 text-sm font-medium transition-all duration-300 focus-visible:ring-2 focus-visible:outline-none",
                           active
                             ? "border-indigo-500 bg-white/5 text-white shadow-[0_0_24px_rgba(99,102,241,0.18)]"
                             : "border-transparent text-white/40 hover:bg-white/[0.04] hover:text-white/80",
@@ -253,7 +253,7 @@ export function AppShell({
 
         {/* Content area — extra bottom padding on mobile so dock doesn't overlap content */}
         <div
-          className="pb-28 pl-4 pr-4 pt-5 transition-opacity duration-300 sm:pl-6 sm:pr-5 md:pl-8 md:pr-6 lg:pb-10 lg:pl-10 lg:pr-8"
+          className="pb-28 pl-4 pr-4 pt-7 transition-opacity duration-300 sm:pl-6 sm:pr-5 md:pl-8 md:pr-6 lg:pb-10 lg:pl-10 lg:pr-8"
           style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))" }}
         >
           {children}
