@@ -20,12 +20,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Core value proposition - what HR leaders see first */
-const valueProps = [
-  { icon: Search, label: "Identify skill gaps" },
-  { icon: GraduationCap, label: "Launch targeted training" },
-  { icon: LineChart, label: "Measure actual impact" },
-];
 
 /** End-to-end TNA/TNI workflow */
 const tnaWorkflow = [
@@ -132,84 +126,182 @@ const stats = [
   { value: "4.9/5", label: "User Satisfaction" },
 ];
 
+function HeroMockup() {
+  return (
+    <div className="relative mx-auto mt-20 max-w-5xl">
+      <motion.div
+        initial={{ opacity: 0, y: 40, rotateX: 15 }}
+        animate={{ opacity: 1, y: 0, rotateX: 0 }}
+        transition={{ duration: 1, delay: 0.4, ease: [0.2, 0.65, 0.3, 0.9] }}
+        style={{ perspective: "1000px" }}
+      >
+        <div className="glass-card relative overflow-hidden rounded-2xl border border-white/10 shadow-2xl transition-all duration-500 hover:border-white/20">
+          {/* Mockup Top Bar */}
+          <div className="flex h-12 items-center gap-2 border-b border-white/[0.08] bg-white/[0.02] px-4">
+            <div className="flex gap-1.5">
+              <div className="h-3 w-3 rounded-full bg-red-500/80" />
+              <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
+              <div className="h-3 w-3 rounded-full bg-green-500/80" />
+            </div>
+            <div className="mx-auto flex h-6 w-64 items-center justify-center rounded-md bg-black/40 text-[10px] text-white/40">
+              bolderbrain.com/app/insights
+            </div>
+          </div>
+          {/* Mockup Content */}
+          <div className="flex h-[400px] bg-black/40">
+            {/* Sidebar */}
+            <div className="hidden w-48 border-r border-white/[0.08] p-4 sm:block">
+              <div className="mb-6 h-4 w-24 rounded bg-white/10" />
+              <div className="space-y-3">
+                <div className="h-3 w-full rounded bg-indigo-500/20" />
+                <div className="h-3 w-3/4 rounded bg-white/5" />
+                <div className="h-3 w-5/6 rounded bg-white/5" />
+              </div>
+            </div>
+            {/* Main Area */}
+            <div className="flex-1 p-6">
+              <div className="mb-6 flex items-center justify-between">
+                <div className="h-6 w-48 rounded bg-white/10" />
+                <div className="h-8 w-24 rounded-lg bg-indigo-500/20" />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 h-48 rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
+                  {/* Fake Chart */}
+                  <div className="flex h-full items-end gap-2">
+                    {[40, 70, 45, 90, 60, 85, 30].map((h, i) => (
+                      <div key={i} className="w-full rounded-t-sm bg-indigo-500/40" style={{ height: `${h}%` }} />
+                    ))}
+                  </div>
+                </div>
+                <div className="col-span-1 space-y-4">
+                  <div className="h-22 rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
+                    <div className="mb-2 h-3 w-16 rounded bg-emerald-500/20" />
+                    <div className="h-8 w-12 rounded bg-white/10" />
+                  </div>
+                  <div className="h-22 rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
+                    <div className="mb-2 h-3 w-16 rounded bg-purple-500/20" />
+                    <div className="h-8 w-12 rounded bg-white/10" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating Cards Foreground */}
+        <motion.div
+          initial={{ opacity: 0, y: 20, x: -20 }}
+          animate={{ opacity: 1, y: [0, -10, 0], x: 0 }}
+          transition={{ opacity: { delay: 0.8, duration: 0.5 }, y: { repeat: Infinity, duration: 4, ease: "easeInOut" } }}
+          className="absolute -left-8 top-1/4 z-10 hidden sm:block"
+        >
+          <div className="glass-card flex items-center gap-3 rounded-xl border border-white/20 bg-black/60 p-4 shadow-2xl backdrop-blur-xl">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-white">Skill Gap Closed</div>
+              <div className="text-xs text-emerald-400">+14% Leadership Score</div>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20, x: 20 }}
+          animate={{ opacity: 1, y: [0, 10, 0], x: 0 }}
+          transition={{ opacity: { delay: 1, duration: 0.5 }, y: { repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 } }}
+          className="absolute -right-8 top-1/2 z-10 hidden sm:block"
+        >
+          <div className="glass-card flex items-center gap-3 rounded-xl border border-white/20 bg-black/60 p-4 shadow-2xl backdrop-blur-xl">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-500/20 text-purple-400">
+              <Brain className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-white">AI Assessment Ready</div>
+              <div className="text-xs text-white/50">Auto-generated in 2.1s</div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+}
+
+function AnimatedGrid() {
+  return (
+    <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+      <div className="aurora-bg absolute inset-0 opacity-50 mix-blend-screen" />
+    </div>
+  );
+}
+
 export function HomeContent() {
   return (
     <div className="relative overflow-hidden">
       {/* Background Effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[150px]" />
-        <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-purple-600/15 rounded-full blur-[130px]" />
-        <div className="absolute bottom-0 left-1/3 w-[700px] h-[700px] bg-cyan-600/10 rounded-full blur-[160px]" />
-      </div>
+      <AnimatedGrid />
 
-      {/* Hero Section - Value Proposition First */}
-      <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32">
+      {/* Hero Section */}
+      <section className="relative z-10 pt-32 pb-20 lg:pt-40 lg:pb-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            {/* Main Value Proposition - Clear & Concise */}
-            <h1 className="font-heading text-4xl md:text-6xl font-bold tracking-tight text-white mb-6">
+          <div className="text-center max-w-4xl mx-auto flex flex-col items-center">
+            
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-sm font-medium mb-8"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Meet the new standard for People Intelligence</span>
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="font-heading text-5xl md:text-7xl font-bold tracking-tight text-white mb-6"
+            >
               Close skill gaps.
-              <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent block mt-2">
+              <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent block mt-2">
                 Prove training works.
               </span>
-            </h1>
+            </motion.h1>
 
-            <p className="text-xl text-white/60 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-xl md:text-2xl text-white/60 mb-10 max-w-2xl mx-auto leading-relaxed"
+            >
               The only platform that connects assessment insights to training impact. 
               From identifying needs to measuring ROI — end to end.
-            </p>
+            </motion.p>
 
-            {/* Value Prop Pillars - What HR Leaders Get */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-10">
-              {valueProps.map((prop, i) => (
-                <motion.div
-                  key={prop.label}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.15 }}
-                  className="flex items-center gap-3"
-                >
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
-                    <prop.icon className="h-5 w-5 text-indigo-400" />
-                  </div>
-                  <span className="text-white/80 font-medium">{prop.label}</span>
-                  {i < valueProps.length - 1 && (
-                    <ArrowRight className="hidden sm:block h-4 w-4 text-white/30 ml-2" />
-                  )}
-                </motion.div>
-              ))}
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center"
+            >
               <Link
                 href="/marketing/demo"
-                className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold",
-                  "bg-gradient-to-r from-indigo-500 to-purple-600 text-white",
-                  "hover:from-indigo-400 hover:to-purple-500 transition-all",
-                  "shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
-                )}
+                className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold bg-white text-black hover:bg-white/90 transition-all shadow-[0_0_24px_rgba(255,255,255,0.2)]"
               >
                 Book a Demo
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
                 href="/marketing/features"
-                className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold",
-                  "bg-white/5 text-white border border-white/10",
-                  "hover:bg-white/10 transition-all"
-                )}
+                className="glass-card inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold text-white hover:bg-white/[0.08] transition-all"
               >
                 Explore Features
               </Link>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
+
+          <HeroMockup />
         </div>
       </section>
 
