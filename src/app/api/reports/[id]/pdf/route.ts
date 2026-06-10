@@ -1,5 +1,5 @@
-// @ts-nocheck
 /* eslint-disable */
+// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import prisma from "@/lib/prisma";
