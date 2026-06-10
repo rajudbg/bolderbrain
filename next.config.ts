@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const appRoot = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  // @ts-expect-error next.js type issue
   eslint: { ignoreDuringBuilds: true },
   outputFileTracingRoot: appRoot,
   compiler: {

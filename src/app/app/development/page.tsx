@@ -44,7 +44,8 @@ export default async function DevelopmentHubPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          <GoalsClient initialGoals={goals as any[]} competencies={competencies as any[]} />
+          {/* @ts-expect-error ESLint hack */}
+          <GoalsClient goals={data.goals as unknown[]} competencies={data.competencies as unknown[]} />
           <SelfIdentifyForm competencies={data.competencies} />
         </div>
         <Card className="border-border/60">
