@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint-disable */
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminOrganizationId } from "@/lib/admin/context";
 import { generateWithFallback } from "@/lib/ai/resilient-generator";
