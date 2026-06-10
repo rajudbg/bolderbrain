@@ -5,6 +5,7 @@ import { signIn, useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -236,7 +237,14 @@ export function LoginForm() {
                 variant="outline"
                 className="w-full border-amber-400/40 bg-[#030305]/50 text-amber-50 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-600 hover:text-white"
               >
-                {pending ? "Signing in…" : "Sign in"}
+                {pending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Authenticating...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
               </Button>
             ) : variant === "super" ? (
               <Button
@@ -245,11 +253,25 @@ export function LoginForm() {
                 variant="outline"
                 className="w-full border-purple-400/40 bg-[#030305]/50 text-purple-100 hover:border-purple-300/55 hover:bg-white/[0.06]"
               >
-                {pending ? "Signing in…" : "Sign in"}
+                {pending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Authenticating...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
               </Button>
             ) : (
               <Button type="submit" disabled={pending} className="w-full">
-                {pending ? "Signing in…" : "Sign in"}
+                {pending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Authenticating...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
               </Button>
             )}
           </form>
