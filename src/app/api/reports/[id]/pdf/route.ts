@@ -81,7 +81,7 @@ export async function GET(
     });
 
     // Score or result summary
-    let summaryText = "Detailed scores and insights are available in the platform.";
+    const summaryText = "Detailed scores and insights are available in the platform.";
     
     page.drawText(summaryText, {
       x: 50,

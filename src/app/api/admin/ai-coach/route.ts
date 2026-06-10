@@ -61,13 +61,13 @@ Average Competency Score: ${kpis.avgCompetencyScore}
 Alerts: ${alerts.pendingEvaluations} pending evaluations, ${alerts.overdue360} overdue 360s, ${alerts.stalled360} stalled 360s.`;
 
   const historyText = Array.isArray(body.history)
-    ? body.history.map((m: any) => `${m.role === "user" ? "Admin" : "AI"}: ${m.content}`).join("\\n")
+    ? body.history.map((m: any) => `${m.role === "user" ? "Admin" : "AI"}: ${m.content}`).join("\n")
     : "";
 
   const prompt = `Context:
 ${contextBlock}
 
-${historyText ? historyText + "\\n" : ""}Admin: ${userMessage}
+${historyText ? historyText + "\n" : ""}Admin: ${userMessage}
 
 AI:`;
 

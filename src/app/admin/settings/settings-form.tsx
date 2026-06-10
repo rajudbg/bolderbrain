@@ -60,7 +60,7 @@ export function SettingsForm({
                 className="w-full bg-transparent px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
-            <p className="text-[0.8rem] text-muted-foreground">Used for your unique sign-in URL.</p>
+            <p className="text-sm text-muted-foreground">Manage your organization&apos;s primary settings.</p>
           </div>
 
           <Button type="submit" disabled={pending}>

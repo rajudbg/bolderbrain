@@ -180,7 +180,7 @@ function EmployeeDrawer({ userId, open, onOpenChange }: { userId: string; open: 
   const [details, setDetails] = useState<Awaited<ReturnType<typeof getEmployeeDrawerDetails>> | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useMemo(() => {
+  useEffect(() => {
     if (open && userId) {
       setLoading(true);
       getEmployeeDrawerDetails(userId)
