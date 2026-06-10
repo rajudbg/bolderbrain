@@ -48,14 +48,30 @@ export function CurrentActionsWidget({
         className="flex cursor-pointer items-center justify-between p-5 hover:bg-white/[0.02] transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-indigo-500/10">
-            <Target className="size-5 text-indigo-400" />
+        <div className="flex items-center gap-4">
+          <div className="relative flex size-12 items-center justify-center">
+            {/* Background ring */}
+            <svg className="absolute inset-0 size-full -rotate-90" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="16" fill="none" className="stroke-white/[0.08]" strokeWidth="3" />
+              {/* Progress ring */}
+              <circle
+                cx="18"
+                cy="18"
+                r="16"
+                fill="none"
+                className="stroke-indigo-500 transition-all duration-1000 ease-out"
+                strokeWidth="3"
+                strokeDasharray="100 100"
+                strokeDashoffset={100 - progress}
+                strokeLinecap="round"
+              />
+            </svg>
+            <Target className="size-5 text-indigo-400 z-10" />
           </div>
           <div>
             <h3 className="font-semibold text-white/90">This week&apos;s focus</h3>
             <p className="text-sm text-white/50">
-              {active.length} active · {done.length} completed · Week {weekKey.split("-W")[1] || weekKey}
+              {active.length} active · {done.length} completed
             </p>
           </div>
         </div>
@@ -65,16 +81,6 @@ export function CurrentActionsWidget({
           </div>
           <ChevronDown
             className={cn("size-5 text-white/50 transition-transform duration-200", expanded && "rotate-180")}
-          />
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="px-5 pb-3">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.08]">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-violet-400 transition-all duration-500"
-            style={{ width: `${progress}%` }}
           />
         </div>
       </div>

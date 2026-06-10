@@ -22,7 +22,7 @@ export async function getDevelopmentHubPayload() {
 
   const orgId = member.organizationId;
 
-  const [inventory, needs, competencies] = await Promise.all([
+  const [inventory, needs, competencies, goals] = await Promise.all([
     prisma.skillsInventory.findMany({
       where: { userId: session.user.id, organizationId: orgId },
       include: { competency: { select: { id: true, key: true, name: true } } },
@@ -39,6 +39,11 @@ export async function getDevelopmentHubPayload() {
       select: { id: true, key: true, name: true },
       orderBy: { name: "asc" },
     }),
+    prisma.developmentGoal.findMany({
+      where: { userId: session.user.id, organizationId: orgId },
+      include: { competency: true },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   return {
@@ -47,6 +52,7 @@ export async function getDevelopmentHubPayload() {
     inventory,
     needs,
     competencies,
+    goals,
   };
 }
 

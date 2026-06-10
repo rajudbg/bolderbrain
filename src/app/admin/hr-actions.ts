@@ -224,3 +224,55 @@ export async function cancelAssessment(assessmentId: string) {
   });
   revalidatePath("/admin/feedback-360");
 }
+
+export async function getEmployeeDrawerDetails(userId: string) {
+  const orgId = await requireAdminOrganizationId();
+
+  const [member, latest360, snapshots, activeActionsCount] = await Promise.all([
+    prisma.organizationMember.findUnique({
+      where: { userId_organizationId: { userId, organizationId: orgId } },
+      include: { user: { select: { name: true, email: true, isActive: true } } },
+    }),
+    prisma.assessment.findFirst({
+      where: { organizationId: orgId, subjectUserId: userId },
+      orderBy: { updatedAt: "desc" },
+      select: { status: true, updatedAt: true, template: { select: { name: true } } },
+    }),
+    prisma.competencyScoreSnapshot.findMany({
+      where: { organizationId: orgId, userId },
+      orderBy: { recordedAt: "desc" },
+      take: 10,
+    }),
+    prisma.userAction.count({
+      where: { organizationId: orgId, userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } },
+    }),
+  ]);
+
+  if (!member) throw new Error("Employee not found");
+
+  // Get unique competencies from recent snapshots
+  const competencyMap = new Map<string, number>();
+  for (const s of snapshots) {
+    if (!competencyMap.has(s.competencyKey)) {
+      competencyMap.set(s.competencyKey, s.othersAverage);
+    }
+  }
+
+  const competencies = Array.from(competencyMap.entries()).map(([key, score]) => ({
+    key,
+    score,
+  }));
+
+  return {
+    user: {
+      name: member.user.name,
+      email: member.user.email,
+      department: member.department,
+      role: member.role,
+      isActive: member.user.isActive,
+    },
+    latest360: latest360 ? { status: latest360.status, updatedAt: latest360.updatedAt, name: latest360.template.name } : null,
+    competencies,
+    activeActionsCount,
+  };
+}

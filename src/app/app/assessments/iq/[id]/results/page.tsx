@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getIqResultPayload } from "../../actions";
 import { IqResultsView } from "./iq-results-view";
+import { ResultsCTA } from "@/components/app-shell/results-cta";
 
 export default async function IqResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,6 +21,7 @@ export default async function IqResultsPage({ params }: { params: Promise<{ id: 
         passingStandardScore={payload.passingStandardScore}
         result={payload.result}
       />
+      <ResultsCTA />
     </div>
   );
 }

@@ -596,6 +596,72 @@ export async function getAssessmentDistribution(orgId: string, range: DateRange)
   };
 }
 
+export async function getMonthlyUsage(orgId: string) {
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+  sixMonthsAgo.setDate(1);
+  sixMonthsAgo.setHours(0, 0, 0, 0);
+
+  const [c360, iq, eq, psych] = await Promise.all([
+    prisma.assessment.findMany({
+      where: {
+        organizationId: orgId,
+        status: AssessmentInstanceStatus.COMPLETED,
+        updatedAt: { gte: sixMonthsAgo },
+      },
+      select: { updatedAt: true },
+    }),
+    prisma.iqTestAttempt.findMany({
+      where: {
+        organizationId: orgId,
+        status: IqAttemptStatus.COMPLETED,
+        submittedAt: { gte: sixMonthsAgo },
+      },
+      select: { submittedAt: true },
+    }),
+    prisma.eqTestAttempt.findMany({
+      where: {
+        organizationId: orgId,
+        status: EqAttemptStatus.COMPLETED,
+        submittedAt: { gte: sixMonthsAgo },
+      },
+      select: { submittedAt: true },
+    }),
+    prisma.psychTestAttempt.findMany({
+      where: {
+        organizationId: orgId,
+        status: PsychAttemptStatus.COMPLETED,
+        submittedAt: { gte: sixMonthsAgo },
+      },
+      select: { submittedAt: true },
+    }),
+  ]);
+
+  const months: string[] = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d.toLocaleString("en-US", { month: "short", year: "2-digit" }));
+  }
+
+  const map = new Map<string, { month: string; feedback360: number; iq: number; eq: number; psych: number }>();
+  for (const m of months) {
+    map.set(m, { month: m, feedback360: 0, iq: 0, eq: 0, psych: 0 });
+  }
+
+  const getMonthStr = (d: Date | null) => {
+    if (!d) return null;
+    return d.toLocaleString("en-US", { month: "short", year: "2-digit" });
+  };
+
+  c360.forEach((r) => { const m = getMonthStr(r.updatedAt); if (m && map.has(m)) map.get(m)!.feedback360++; });
+  iq.forEach((r) => { const m = getMonthStr(r.submittedAt); if (m && map.has(m)) map.get(m)!.iq++; });
+  eq.forEach((r) => { const m = getMonthStr(r.submittedAt); if (m && map.has(m)) map.get(m)!.eq++; });
+  psych.forEach((r) => { const m = getMonthStr(r.submittedAt); if (m && map.has(m)) map.get(m)!.psych++; });
+
+  return Array.from(map.values());
+}
+
 export async function getActionOversight(orgId: string) {
   const twoWeeksAgo = new Date(Date.now() - 14 * 86400000);
 

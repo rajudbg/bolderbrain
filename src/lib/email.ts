@@ -216,3 +216,20 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
 
   await sendResendEmail({ to: email, subject, text, label: "password-reset" });
 }
+
+export async function notifyWelcomeNewOrg(email: string, orgName: string, token: string): Promise<void> {
+  const url = `${appOrigin()}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+  const subject = `Welcome to BolderBrain — Set up your workspace`;
+  const text = [
+    `Welcome to BolderBrain!`,
+    ``,
+    `Your workspace "${orgName}" has been successfully provisioned.`,
+    ``,
+    `Click the link below to set your admin password and sign in:`,
+    url,
+    ``,
+    `If you have any questions, reply to this email.`,
+  ].join("\n");
+
+  await sendResendEmail({ to: email, subject, text, label: "welcome-org" });
+}

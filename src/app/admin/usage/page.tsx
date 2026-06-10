@@ -3,6 +3,8 @@ import { defaultDateRange, getAssessmentDistribution } from "@/lib/admin/queries
 import { requireAdminOrganizationId } from "@/lib/admin/context";
 import prisma from "@/lib/prisma";
 import { UsageMiniChart } from "../_components/usage-mini-chart";
+import { MonthlyUsageChart } from "./monthly-usage-chart";
+import { getMonthlyUsage } from "@/lib/admin/queries";
 
 function assessmentUnitCostUsd() {
   const value = Number(process.env.ASSESSMENT_UNIT_COST_USD ?? "12");
@@ -12,7 +14,10 @@ function assessmentUnitCostUsd() {
 export default async function UsagePage() {
   const orgId = await requireAdminOrganizationId();
   const range = defaultDateRange();
-  const d = await getAssessmentDistribution(orgId, range);
+  const [d, monthlyData] = await Promise.all([
+    getAssessmentDistribution(orgId, range),
+    getMonthlyUsage(orgId),
+  ]);
 
   const chartData = [
     { name: "360", value: d.feedback360 },
@@ -71,6 +76,16 @@ export default async function UsagePage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader>
+          <CardTitle>Monthly completion trend</CardTitle>
+          <CardDescription>6-month view of completions by type</CardDescription>
+        </CardHeader>
+        <CardContent className="h-[340px]">
+          <MonthlyUsageChart data={monthlyData} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

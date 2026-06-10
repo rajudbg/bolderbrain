@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getPsychResultPayload } from "../../actions";
 import { PsychResultsView } from "./psych-results-view";
+import { ResultsCTA } from "@/components/app-shell/results-cta";
 
 export default async function PsychResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -8,11 +9,14 @@ export default async function PsychResultsPage({ params }: { params: Promise<{ i
   if (!payload) redirect("/app/assessments/psychometric");
 
   return (
-    <PsychResultsView
-      templateName={payload.templateName}
-      submittedAt={payload.submittedAt}
-      result={payload.result}
-      roleProfileKeys={payload.roleProfileKeys}
-    />
+    <>
+      <PsychResultsView
+        templateName={payload.templateName}
+        submittedAt={payload.submittedAt}
+        result={payload.result}
+        roleProfileKeys={payload.roleProfileKeys}
+      />
+      <ResultsCTA />
+    </>
   );
 }

@@ -9,19 +9,22 @@ import { NotificationType } from "@/generated/prisma/enums";
 const INSIGHT_SYSTEM_PROMPT = `You are a senior HR consultant writing 360 feedback insights. 
 
 Guidelines:
-- Write 2-3 sentences maximum
-- First sentence: Observe the data pattern without judgment
-- Second sentence: Explain why this matters for their growth  
-- Third sentence (optional): One specific, actionable technique to try this week
+- Output your insight as exactly 3 sections using Markdown H3 (###).
+- The three headers must be exactly: "### 🌟 Top Strength", "### ⚠️ Blind Spot", and "### 🚀 Growth Action".
+- Under each header, write 1-2 concise sentences.
 - Tone: Empathetic but direct, supportive but honest
 - Avoid: Corporate jargon, buzzwords, "leverage", "synergy"
 - Use "you" not "the employee"
 
-Example good insight:
-"Your peers rated your Communication 3.1/5 while you rated yourself 4.5/5. This gap suggests others may experience you differently than you intend. Try asking 'What should I stop doing in meetings?' to surface blind spots."
+Example format:
+### 🌟 Top Strength
+Your peers rated your Problem Solving highly. They appreciate your analytical approach.
 
-Example bad insight:
-"You should leverage your core competencies to maximize stakeholder alignment going forward."`;
+### ⚠️ Blind Spot
+There is a gap between your self-rating and peer rating in Communication. This suggests others may experience you differently than you intend.
+
+### 🚀 Growth Action
+Try asking 'What should I stop doing in meetings?' to surface blind spots.`;
 
 export type Flat360Scores = {
   userId: string;
@@ -70,13 +73,18 @@ export function flatten360Scores(
 
 function ruleBasedInsightText(scores: Flat360Scores): string {
   const gap = scores.gapSelfPeer;
+  const strength = `Your highest rated competency is ${scores.highestCompetency}.`;
+  
+  let blindSpot = "Your self-assessment and peer feedback are generally aligned.";
   if (gap > 0.5) {
-    return `You rated yourself ${scores.self.toFixed(1)}/5 overall, higher than your peers' average of ${scores.peer.toFixed(1)}/5. This suggests a blind spot in how you're perceived. Consider asking your manager for specific examples related to ${scores.lowestCompetency}.`;
+    blindSpot = `You rated yourself higher overall than your peers did. This suggests a blind spot in how you're perceived, especially in ${scores.lowestCompetency}.`;
+  } else if (gap < -0.3) {
+    blindSpot = `Your peers rated you higher than you rated yourself. You may be underestimating your strengths.`;
   }
-  if (gap < -0.3) {
-    return `Your peers rated you ${scores.peer.toFixed(1)}/5 on average, higher than your self-rating of ${scores.self.toFixed(1)}. You may be underestimating your strengths, especially in ${scores.highestCompetency}.`;
-  }
-  return `Your self-assessment (${scores.self.toFixed(1)}) and peer feedback (${scores.peer.toFixed(1)}) are generally aligned. Continue developing your ${scores.lowestCompetency} skills.`;
+
+  const action = `Consider asking your manager for specific examples related to ${scores.lowestCompetency}.`;
+
+  return `### 🌟 Top Strength\n${strength}\n\n### ⚠️ Blind Spot\n${blindSpot}\n\n### 🚀 Growth Action\n${action}`;
 }
 
 export async function generate360Insight(scores: Flat360Scores) {

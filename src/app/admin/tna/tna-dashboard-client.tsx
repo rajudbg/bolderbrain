@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -204,7 +205,16 @@ export function TnaDashboardClient(props: {
           .
         </p>
       )}
-      <section className="grid gap-4 sm:grid-cols-3">
+
+      <Tabs defaultValue="overview" className="space-y-8">
+        <TabsList className="w-full sm:w-auto overflow-x-auto border border-white/10 bg-white/[0.03] flex-nowrap mb-2">
+          <TabsTrigger value="overview" className="shrink-0">Overview</TabsTrigger>
+          <TabsTrigger value="needs" className="shrink-0">Needs</TabsTrigger>
+          <TabsTrigger value="ai" className="shrink-0">AI</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-8">
+          <section className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
           <p className="text-caption-cerebral text-white/45">At standard</p>
           <p className="mt-2 font-heading text-3xl font-semibold text-white/90">{summaryPct.atStandard}%</p>
@@ -220,9 +230,125 @@ export function TnaDashboardClient(props: {
           <p className="mt-2 font-heading text-3xl font-semibold text-sky-300/90">{summaryPct.exceeding}%</p>
           <p className="mt-1 text-xs text-white/40">Ahead of proficiency bar</p>
         </div>
-      </section>
+          </section>
+          
+          <section className="space-y-3">
+            <h2 className="font-heading text-xl font-semibold text-white/90">Organization heatmap</h2>
+            <p className="max-w-3xl text-sm text-white/50">
+              Employees × competencies — hover for scores. Colors: critical (red), high (amber), met (green), exceeds (blue).
+            </p>
+            <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+              <table className="min-w-full border-collapse text-xs">
+                <thead>
+                  <tr>
+                    <th className="sticky left-0 z-10 bg-[#0F0F11] px-2 py-2 text-left font-medium text-white/55">
+                      Employee
+                    </th>
+                    {competencies.map((c) => (
+                      <th key={c.id} className="min-w-[100px] px-1 py-2 text-center font-medium text-white/45">
+                        {c.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {userOrder.map((uid) => {
+                    const label =
+                      inventory.find((r) => r.userId === uid)?.user.name ??
+                      inventory.find((r) => r.userId === uid)?.user.email ??
+                      uid;
+                    return (
+                      <tr key={uid}>
+                        <td className="sticky left-0 z-10 bg-[#0F0F11]/95 px-2 py-1 text-white/75">{label}</td>
+                        {competencies.map((c) => {
+                          const cell = invMap.get(`${uid}:${c.id}`);
+                          if (!cell) {
+                            return (
+                              <td key={c.id} className="border border-white/[0.04] p-0">
+                                <div className="h-8 bg-white/[0.03]" title="No snapshot" />
+                              </td>
+                            );
+                          }
+                          return (
+                            <td key={c.id} className="border border-white/[0.04] p-0">
+                              <div
+                                className={`flex h-8 items-center justify-center px-0.5 ${severityCellClass(cell.severity)}`}
+                                title={`${cell.competency.name}: current ${cell.currentScore.toFixed(2)} / target ${cell.targetScore.toFixed(2)} (gap ${cell.gap.toFixed(2)})`}
+                              >
+                                {cell.gap.toFixed(1)}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-white/35">~{memberCount} members in org · {inventory.length} inventory cells</p>
+          </section>
+          
+          <section className="space-y-3">
+            <h2 className="font-heading text-xl font-semibold text-white/90">Organization heatmap</h2>
+            <p className="max-w-3xl text-sm text-white/50">
+              Employees × competencies — hover for scores. Colors: critical (red), high (amber), met (green), exceeds (blue).
+            </p>
+            <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+              <table className="min-w-full border-collapse text-xs">
+                <thead>
+                  <tr>
+                    <th className="sticky left-0 z-10 bg-[#0F0F11] px-2 py-2 text-left font-medium text-white/55">
+                      Employee
+                    </th>
+                    {competencies.map((c) => (
+                      <th key={c.id} className="min-w-[100px] px-1 py-2 text-center font-medium text-white/45">
+                        {c.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {userOrder.map((uid) => {
+                    const label =
+                      inventory.find((r) => r.userId === uid)?.user.name ??
+                      inventory.find((r) => r.userId === uid)?.user.email ??
+                      uid;
+                    return (
+                      <tr key={uid}>
+                        <td className="sticky left-0 z-10 bg-[#0F0F11]/95 px-2 py-1 text-white/75">{label}</td>
+                        {competencies.map((c) => {
+                          const cell = invMap.get(`${uid}:${c.id}`);
+                          if (!cell) {
+                            return (
+                              <td key={c.id} className="border border-white/[0.04] p-0">
+                                <div className="h-8 bg-white/[0.03]" title="No snapshot" />
+                              </td>
+                            );
+                          }
+                          return (
+                            <td key={c.id} className="border border-white/[0.04] p-0">
+                              <div
+                                className={`flex h-8 items-center justify-center px-0.5 ${severityCellClass(cell.severity)}`}
+                                title={`${cell.competency.name}: current ${cell.currentScore.toFixed(2)} / target ${cell.targetScore.toFixed(2)} (gap ${cell.gap.toFixed(2)})`}
+                              >
+                                {cell.gap.toFixed(1)}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-white/35">~{memberCount} members in org · {inventory.length} inventory cells</p>
+          </section>
+        </TabsContent>
 
-      {!teamMode && (
+        <TabsContent value="needs" className="space-y-8">
+          {!teamMode && (
       <section className="space-y-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -261,63 +387,6 @@ export function TnaDashboardClient(props: {
         </div>
       </section>
       )}
-
-      <section className="space-y-3">
-        <h2 className="font-heading text-xl font-semibold text-white/90">Organization heatmap</h2>
-        <p className="max-w-3xl text-sm text-white/50">
-          Employees × competencies — hover for scores. Colors: critical (red), high (amber), met (green), exceeds (blue).
-        </p>
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02] p-3">
-          <table className="min-w-full border-collapse text-xs">
-            <thead>
-              <tr>
-                <th className="sticky left-0 z-10 bg-[#0F0F11] px-2 py-2 text-left font-medium text-white/55">
-                  Employee
-                </th>
-                {competencies.map((c) => (
-                  <th key={c.id} className="min-w-[100px] px-1 py-2 text-center font-medium text-white/45">
-                    {c.name}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {userOrder.map((uid) => {
-                const label =
-                  inventory.find((r) => r.userId === uid)?.user.name ??
-                  inventory.find((r) => r.userId === uid)?.user.email ??
-                  uid;
-                return (
-                  <tr key={uid}>
-                    <td className="sticky left-0 z-10 bg-[#0F0F11]/95 px-2 py-1 text-white/75">{label}</td>
-                    {competencies.map((c) => {
-                      const cell = invMap.get(`${uid}:${c.id}`);
-                      if (!cell) {
-                        return (
-                          <td key={c.id} className="border border-white/[0.04] p-0">
-                            <div className="h-8 bg-white/[0.03]" title="No snapshot" />
-                          </td>
-                        );
-                      }
-                      return (
-                        <td key={c.id} className="border border-white/[0.04] p-0">
-                          <div
-                            className={`flex h-8 items-center justify-center px-0.5 ${severityCellClass(cell.severity)}`}
-                            title={`${cell.competency.name}: current ${cell.currentScore.toFixed(2)} / target ${cell.targetScore.toFixed(2)} (gap ${cell.gap.toFixed(2)})`}
-                          >
-                            {cell.gap.toFixed(1)}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-white/35">~{memberCount} members in org · {inventory.length} inventory cells</p>
-      </section>
 
       {!teamMode && (
       <section className="space-y-4">
@@ -491,8 +560,10 @@ export function TnaDashboardClient(props: {
         </div>
       </section>
       )}
+        </TabsContent>
 
-      {!teamMode && (
+        <TabsContent value="ai" className="space-y-8">
+          {!teamMode && (
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
           <div className="flex items-center justify-between gap-2">
@@ -536,8 +607,10 @@ export function TnaDashboardClient(props: {
           </div>
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/60">{aiTrend ?? "Connect quarterly TNA snapshots to unlock forecasting."}</p>
         </div>
-      </section>
-      )}
+          </section>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* AI Recommendation Modal */}
       <Dialog open={aiModalOpen} onOpenChange={setAiModalOpen}>

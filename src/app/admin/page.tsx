@@ -18,19 +18,27 @@ import {
 import { requireAdminOrganizationId } from "@/lib/admin/context";
 import { UsageMiniChart } from "./_components/usage-mini-chart";
 import { CompetencyTrendChart, CompetencyHeatmapGrid, CompletionFunnelChart } from "./_components/admin-charts";
+import { DateRangeFilter } from "./_components/date-range-filter";
 import { AdminPageSkeleton, CardSkeleton, KpiSkeleton } from "@/components/ui/skeleton-loading";
 
-export default async function AdminOverviewPage() {
+export default async function AdminOverviewPage(props: { searchParams: Promise<{ days?: string }> }) {
+  const searchParams = await props.searchParams;
   return (
     <Suspense fallback={<AdminPageSkeleton />}>
-      <AdminOverviewContent />
+      <AdminOverviewContent searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function AdminOverviewContent() {
+async function AdminOverviewContent({ searchParams }: { searchParams: { days?: string } }) {
   const orgId = await requireAdminOrganizationId();
-  const range = defaultDateRange();
+  
+  const days = parseInt(searchParams.days || "90", 10);
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - days);
+  const range = { from, to };
+  
   const prev = previousPeriod(range);
 
   // Primary KPIs
@@ -67,7 +75,10 @@ async function AdminOverviewContent() {
           </p>
         </div>
         <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:items-end">
-          <Launch360ReviewButton className="w-full sm:w-auto" />
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <DateRangeFilter />
+            <Launch360ReviewButton className="flex-1 sm:flex-none" />
+          </div>
           <Link href="/admin/reports" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full sm:w-auto")}>
             Exports & reports
           </Link>
@@ -177,13 +188,13 @@ async function AdminOverviewContent() {
 
         <Card className="border-border/60 shadow-sm">
           <CardHeader>
-            <CardTitle>Benchmarking (illustrative)</CardTitle>
-            <CardDescription>Compare your organization to industry norms</CardDescription>
+            <CardTitle>Internal Benchmarking</CardTitle>
+            <CardDescription>Compare current period vs prior period</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-sm">
-              Your org average others-rating is <strong>{kpis.avgCompetencyScore}</strong> on a 1-5 style scale vs
-              a mock industry median of <strong>3.6</strong>. Use the competency heatmap above to localize gaps,
+              Your org average others-rating is <strong>{kpis.avgCompetencyScore}</strong> on a 1-5 style scale. 
+              Use the competency heatmap above to localize gaps,
               then drill into individual departments to see where action is needed.
             </p>
           </CardContent>

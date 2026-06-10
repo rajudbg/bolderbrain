@@ -57,8 +57,23 @@ export function AIInsightCard({
   const modelShort = modelUsed?.includes("/") ? modelUsed.split("/").slice(1).join("/") : modelUsed ?? "AI";
 
   // Truncate long insights for a "read more" experience
-  const needsTruncation = finalText.length > 200 && !expanded;
-  const displayText = needsTruncation ? finalText.slice(0, 200) + "…" : finalText;
+  const needsTruncation = finalText.length > 500 && !expanded;
+  const displayText = needsTruncation ? finalText.slice(0, 500) + "…" : finalText;
+
+  // Attempt to parse structured 3-card format
+  const isStructured = displayText.includes("### ");
+  let structuredCards: { title: string; content: string }[] = [];
+  if (isStructured) {
+    const parts = displayText.split(/(?=### )/);
+    structuredCards = parts
+      .filter((p) => p.trim().startsWith("### "))
+      .map((p) => {
+        const lines = p.trim().split("\n");
+        const title = lines[0].replace("### ", "").trim();
+        const content = lines.slice(1).join("\n").trim();
+        return { title, content };
+      });
+  }
 
   return (
     <motion.div
@@ -106,9 +121,25 @@ export function AIInsightCard({
         </div>
 
         {/* Insight text with markdown rendering */}
-        <div className="relative mb-4 space-y-0.5 text-white/85">
-          <MarkdownRenderer content={displayText} />
-
+        <div className="relative mb-4 text-white/85">
+          {structuredCards.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mt-4">
+              {structuredCards.map((card, idx) => (
+                <div key={idx} className="rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-colors hover:bg-white/[0.04]">
+                  <h4 className="text-sm font-semibold text-white/90 mb-2 flex items-center gap-2">
+                    {card.title}
+                  </h4>
+                  <div className="text-sm text-white/70 leading-relaxed">
+                    <MarkdownRenderer content={card.content} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              <MarkdownRenderer content={displayText} />
+            </div>
+          )}
         </div>
 
         {/* Read more toggle */}

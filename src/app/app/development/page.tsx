@@ -4,6 +4,7 @@ import { getDevelopmentHubPayload } from "./actions";
 import { DevelopmentRadarChart } from "./development-radar-chart";
 import { SelfIdentifyForm } from "./self-identify-form";
 import { DevPlanClient } from "./dev-plan-client";
+import { GoalsClient } from "./goals-client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -42,7 +43,10 @@ export default async function DevelopmentHubPage() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <SelfIdentifyForm competencies={data.competencies} />
+        <div className="space-y-6">
+          <GoalsClient goals={data.goals as any} competencies={data.competencies as any} />
+          <SelfIdentifyForm competencies={data.competencies} />
+        </div>
         <Card className="border-border/60">
           <CardHeader>
             <CardTitle className="text-lg">Your training needs</CardTitle>

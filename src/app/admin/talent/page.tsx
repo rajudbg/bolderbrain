@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getTalentLists, getTeamPsychSummary } from "@/lib/admin/queries";
 import { requireAdminOrganizationId } from "@/lib/admin/context";
 import { generateTeamDynamicsNarrative } from "@/lib/ai/eq-psych-narratives";
+import { OceanRadarChart } from "./ocean-radar-chart";
 
 export default async function TalentInsightsPage() {
   const orgId = await requireAdminOrganizationId();
@@ -40,7 +41,7 @@ export default async function TalentInsightsPage() {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-rose-200/70 dark:border-rose-900/40">
+        <Card className="border-rose-500/20 bg-rose-500/5 shadow-[0_8px_32px_rgba(225,29,72,0.1)] backdrop-blur-md">
           <CardHeader>
             <CardTitle className="text-lg">Higher-attention employees</CardTitle>
             <CardDescription>Large self/others gaps, stale activity, or low manager averages</CardDescription>
@@ -56,7 +57,7 @@ export default async function TalentInsightsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-emerald-200/70 dark:border-emerald-900/40">
+        <Card className="border-emerald-500/20 bg-emerald-500/5 shadow-[0_8px_32px_rgba(16,185,129,0.1)] backdrop-blur-md">
           <CardHeader>
             <CardTitle className="text-lg">High-potential signals</CardTitle>
             <CardDescription>Strong others-ratings vs modest self-ratings (coaching moment)</CardDescription>
@@ -75,7 +76,7 @@ export default async function TalentInsightsPage() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="border-cyan-500/20 bg-cyan-500/5 shadow-[0_8px_32px_rgba(6,182,212,0.1)] backdrop-blur-md">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-cyan-500" />
@@ -105,28 +106,15 @@ export default async function TalentInsightsPage() {
                   </div>
                 </div>
                 <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{t.narrativeText}</p>
-                <dl className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
-                  <div>
-                    <dt className="text-muted-foreground">O</dt>
-                    <dd className="tabular-nums">{t.avgOpenness}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">C</dt>
-                    <dd className="tabular-nums">{t.avgConscientiousness}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">E</dt>
-                    <dd className="tabular-nums">{t.avgExtraversion}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">A</dt>
-                    <dd className="tabular-nums">{t.avgAgreeableness}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">N</dt>
-                    <dd className="tabular-nums">{t.avgNeuroticism}</dd>
-                  </div>
-                </dl>
+                <OceanRadarChart 
+                  data={{
+                    o: t.avgOpenness,
+                    c: t.avgConscientiousness,
+                    e: t.avgExtraversion,
+                    a: t.avgAgreeableness,
+                    n: t.avgNeuroticism
+                  }}
+                />
               </div>
             ))
           )}
