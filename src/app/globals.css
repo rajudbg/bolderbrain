@@ -511,12 +511,13 @@
   .recharts-wrapper {
     width: 100% !important;
     height: 320px !important;
+    background: white !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
   .recharts-surface {
-    background: transparent !important;
+    background: white !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -530,10 +531,18 @@
     color: #555 !important;
   }
 
-  [class*="lg:pl-"], [class*="pl-72"], [class*="ml-"] {
-    padding-left: 0 !important;
-    margin-left: 0 !important;
-    max-width: 100% !important;
+  .lg\:pl-72, .pl-4, .pr-4, .pt-7, .pb-28,
+  .sm\:pl-6, .sm\:pr-5,
+  .md\:pl-8, .md\:pr-6,
+  .lg\:pb-10, .lg\:pl-10, .lg\:pr-8,
+  .lg\:px-8 {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  [class*="mx-auto"] {
+    max-width: none !important;
+    margin: 0 !important;
   }
 
   svg, canvas, [class*="recharts"] {
