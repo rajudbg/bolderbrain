@@ -2,14 +2,15 @@
 import { MarkdownRenderer } from "@/components/ai/markdown-renderer";
 
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Printer, Heart, TrendingUp, Sparkles } from "lucide-react";
+import { Loader2, Printer, Heart, TrendingUp, Sparkles } from "lucide-react";
 import { EqAmbientBackground, glassCardClassName } from "@/components/cerebral-glass";
 import { Button } from "@/components/ui/button";
 import { EQ_DOMAIN_RESOURCES } from "@/lib/eq-resources";
 import { domainDisplayName, EQ_DOMAIN_KEYS, type EqDomainKey } from "@/lib/eq-domains";
 import { cn } from "@/lib/utils";
+import { generatePdf } from "@/lib/pdf/export-pdf";
 
 const THERMAL_GRADIENT =
   "linear-gradient(to right, #1e3a8a 0%, #4f46e5 22%, #a855f7 48%, #ec4899 72%, #fb923c 100%)";
@@ -72,8 +73,31 @@ export function EqResultsView({
   };
 }) {
   const [showCompare, setShowCompare] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const prev = result.previousSnapshot;
   const { x, y } = result.heatmapPosition;
+
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    await new Promise((r) => setTimeout(r, 50));
+    try {
+      const sections: { element: HTMLElement; title?: string }[] = [];
+      const el = document.getElementById("eq-pdf-content");
+      if (el) {
+        const cards = el.querySelectorAll("[data-pdf-card]");
+        cards.forEach((c) => sections.push({ element: c as HTMLElement }));
+      }
+      if (sections.length === 0) throw new Error("PDF content not found");
+      await generatePdf({
+        reportTitle: "EQ Profile Report",
+        subjectName: templateName,
+        sections,
+        filename: `eq-profile_${templateName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
+      });
+    } finally {
+      setExporting(false);
+    }
+  }, [templateName]);
 
   const domainValues = useMemo(
     () => EQ_DOMAIN_KEYS.map((k) => result.domainScores[k] ?? 0),
@@ -103,9 +127,8 @@ export function EqResultsView({
     <div className="relative min-h-screen bg-[#0F0F11] text-white">
       <EqAmbientBackground />
 
-      <div className="relative z-10 mx-auto max-w-6xl space-y-10 px-4 py-10 print:max-w-none print:px-0 print:py-0">
-        <h1 className="hidden print:block text-2xl font-bold mb-4">{templateName}</h1>
-        <header className="space-y-2 text-center md:text-left print:hidden">
+      <div className="relative z-10 mx-auto max-w-6xl space-y-10 px-4 py-10">
+        <header className="space-y-2 text-center md:text-left">
           <p className="text-caption-cerebral">Emotional intelligence</p>
           <h1 className="font-heading text-4xl font-bold tracking-tight text-transparent bg-gradient-to-r from-white to-white/60 bg-clip-text md:text-5xl">
             Your EQ Profile
@@ -120,7 +143,7 @@ export function EqResultsView({
         </header>
 
         {/* Composite — pulsing amber ring */}
-        <div className="flex flex-col items-center justify-center py-6 print-bg-preserve">
+        <div className="flex flex-col items-center justify-center py-6">
           <p className="text-caption-cerebral mb-4">Composite</p>
           <div className="relative flex size-44 items-center justify-center md:size-52">
             <div
@@ -190,7 +213,7 @@ export function EqResultsView({
         </div>
 
         {/* Thermal column heatmap + bar chart */}
-        <div className="print-bg-preserve grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
           <div className={cn(glassCardClassName("p-5"), "border-white/10 bg-white/[0.02]")}>
             <h3 className="font-heading mb-1 text-base font-semibold text-white/90">Intensity map</h3>
             <p className="mb-4 text-xs text-white/50">
@@ -228,7 +251,7 @@ export function EqResultsView({
           <div className={cn(glassCardClassName("p-5"), "border-white/10 bg-white/[0.02]")}>
             <h3 className="font-heading mb-1 text-base font-semibold text-white/90">Thermal bars</h3>
             <p className="mb-2 text-xs text-white/50">Score drives fill color (blue → purple → pink → amber)</p>
-            <div className="h-[min(280px,40vh)] w-full print:hidden">
+            <div className="h-[min(280px,40vh)] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 8, right: 8, left: 0, bottom: 32 }}>
                   <XAxis
@@ -263,15 +286,6 @@ export function EqResultsView({
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="hidden print:block space-y-1">
-              {barData.map((d) => (
-                <div key={d.key} className="flex justify-between text-sm py-0.5">
-                  <span>{domainDisplayName(d.key as EqDomainKey)}</span>
-                  <span className="font-medium">{d.score.toFixed(0)}%</span>
-                </div>
-              ))}
-              <p className="text-xs pt-2 border-t mt-2">Composite: {Math.round(result.compositeScore)} · ~{result.percentileComposite.toFixed(0)}th percentile</p>
-            </div>
           </div>
         </div>
 
@@ -279,7 +293,7 @@ export function EqResultsView({
         <div className={cn(glassCardClassName("p-5"), "border-white/10 bg-white/[0.02]")}>
           <h3 className="font-heading mb-1 text-base font-semibold text-white/90">Self-Awareness × Self-Regulation</h3>
           <p className="mb-4 text-xs text-white/50">Zone: {result.quadrantLabel}</p>
-          <div className="relative mx-auto aspect-square w-full max-w-[280px] print:hidden">
+          <div className="relative mx-auto aspect-square w-full max-w-[280px]">
             <div
               className="absolute inset-0 grid grid-cols-2 grid-rows-2 overflow-hidden rounded-xl border border-white/10"
               style={{
@@ -307,11 +321,7 @@ export function EqResultsView({
               title="You"
             />
           </div>
-          <div className="hidden print:block space-y-1">
-            <p className="text-sm">Zone: {result.quadrantLabel}</p>
-            <p className="text-xs">X (Self-Regulation): {Math.round(x)}% · Y (Self-Awareness): {Math.round(y)}%</p>
-          </div>
-          <p className="mt-3 text-center text-xs text-white/50 print:hidden">X = Self-Regulation · Y = Self-Awareness (0–100)</p>
+          <p className="mt-3 text-center text-xs text-white/50">X = Self-Regulation · Y = Self-Awareness (0–100)</p>
         </div>
 
         {/* Emotional Blueprint */}
@@ -449,20 +459,87 @@ export function EqResultsView({
           </div>
         </div>
 
-        <div className="flex justify-end print:hidden">
-          <Button
-            type="button"
-            variant="outline"
-            className="gap-2"
-            onClick={() => {
-              document.title = `EQ Profile — ${templateName} — BolderBrain`;
-              window.print();
-            }}
-          >
-            <Printer className="size-4" />
-            Export / print PDF
+        <div className="flex justify-end">
+          <Button type="button" className="gap-2" onClick={handleExport} disabled={exporting}>
+            {exporting ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
+            {exporting ? "Generating PDF…" : "Download PDF"}
           </Button>
         </div>
+      </div>
+
+      {/* Hidden off-screen PDF content */}
+      <div id="eq-pdf-content" className="fixed left-[-9999px] top-0 w-[820px] bg-white p-10" style={{ zIndex: -1 }}>
+        <div data-pdf-card className="mb-8">
+          <p className="text-3xl font-bold text-gray-900 mb-1">{templateName}</p>
+          <p className="text-sm text-gray-500 mb-6">EQ Profile Report</p>
+          <div className="flex items-baseline gap-4 mb-4">
+            <span className="text-5xl font-bold text-amber-600">{Math.round(result.compositeScore)}</span>
+            <div>
+              <p className="text-sm text-gray-700">Composite EQ Score</p>
+              <p className="text-xs text-gray-500">~{result.percentileComposite.toFixed(0)}th percentile</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-700">Zone: {result.quadrantLabel}</p>
+        </div>
+
+        <div data-pdf-card className="mb-8">
+          <p className="text-base font-semibold text-gray-900 mb-3">Domain breakdown</p>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-300">
+                <th className="text-left font-semibold text-gray-700 py-2">Domain</th>
+                <th className="text-right font-semibold text-gray-700 py-2">Score</th>
+                <th className="text-right font-semibold text-gray-700 py-2">Percentile</th>
+              </tr>
+            </thead>
+            <tbody>
+              {EQ_DOMAIN_KEYS.map((k) => {
+                const v = result.domainScores[k] ?? 0;
+                const pct = result.percentileByDomain[k] ?? 0;
+                return (
+                  <tr key={k} className="border-b border-gray-100">
+                    <td className="py-2 text-gray-800">{domainDisplayName(k)}</td>
+                    <td className="py-2 text-right text-gray-700">{Math.round(v)}%</td>
+                    <td className="py-2 text-right text-gray-700">~{pct.toFixed(0)}th</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div data-pdf-card className="mb-8">
+          <p className="text-base font-semibold text-gray-900 mb-3">Highlights</p>
+          <p className="text-sm text-gray-700 mb-1">Greatest strength: {domainDisplayName(result.highestDomain)}</p>
+          <p className="text-sm text-gray-700 mb-1">Growth opportunity: {domainDisplayName(result.lowestDomain)}</p>
+          <p className="text-sm text-gray-500">Balance spread: σ ≈ {variance.toFixed(1)}</p>
+        </div>
+
+        {result.narrativeText && (
+          <div data-pdf-card className="mb-8">
+            <p className="text-base font-semibold text-gray-900 mb-3">AI Coaching Narrative</p>
+            <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{result.narrativeText}</div>
+          </div>
+        )}
+
+        {prev && (
+          <div data-pdf-card className="mb-8">
+            <p className="text-base font-semibold text-gray-900 mb-3">Growth over time</p>
+            <p className="text-sm text-gray-700 mb-2">
+              Composite: {prev.compositeScore.toFixed(1)} → {result.compositeScore.toFixed(1)} ({(result.compositeScore - prev.compositeScore).toFixed(1)} points)
+            </p>
+            {EQ_DOMAIN_KEYS.map((k) => {
+              const a = prev.domainScores[k] ?? 0;
+              const b = result.domainScores[k] ?? 0;
+              if (a === b) return null;
+              return (
+                <p key={k} className="text-sm text-gray-600">
+                  {domainDisplayName(k)}: {a.toFixed(0)} → {b.toFixed(0)}
+                </p>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

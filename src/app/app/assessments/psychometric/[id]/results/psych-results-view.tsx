@@ -1,7 +1,7 @@
 "use client";
 import { MarkdownRenderer } from "@/components/ai/markdown-renderer";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Legend,
   PolarAngleAxis,
@@ -12,10 +12,11 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { Printer, Lock, Sparkles } from "lucide-react";
+import { Loader2, Printer, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OCEAN_TRAITS, oceanDisplayName } from "@/lib/ocean-traits";
+import { generatePdf } from "@/lib/pdf/export-pdf";
 
 const TRAIT_BLURBS: Record<string, string> = {
   Openness:
@@ -60,6 +61,29 @@ export function PsychResultsView({
   roleProfileKeys: string[];
 }) {
   const [visible, setVisible] = useState({ you: true, avg: true, ideal: true });
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    await new Promise((r) => setTimeout(r, 50));
+    try {
+      const sections: { element: HTMLElement; title?: string }[] = [];
+      const el = document.getElementById("psych-pdf-content");
+      if (el) {
+        const cards = el.querySelectorAll("[data-pdf-card]");
+        cards.forEach((c) => sections.push({ element: c as HTMLElement }));
+      }
+      if (sections.length === 0) throw new Error("PDF content not found");
+      await generatePdf({
+        reportTitle: "Personality Profile Report",
+        subjectName: templateName,
+        sections,
+        filename: `personality-profile_${templateName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
+      });
+    } finally {
+      setExporting(false);
+    }
+  }, [templateName]);
 
   const radarData = useMemo(() => {
     const { traits, user, population, idealLeadership } = result.radarPayload;
@@ -74,9 +98,8 @@ export function PsychResultsView({
 
   return (
     <div className="from-violet-50/40 via-background min-h-screen bg-gradient-to-b to-background dark:from-violet-950/20">
-      <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 print:max-w-none print:px-0 print:py-0">
-        <h1 className="hidden print:block text-2xl font-bold mb-4">{templateName}</h1>
-        <header className="space-y-2 print:hidden">
+      <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
+        <header className="space-y-2">
           <p className="text-sm font-medium tracking-wide text-violet-700 uppercase dark:text-violet-400">
             Personality profile
           </p>
@@ -111,7 +134,7 @@ export function PsychResultsView({
           </Card>
         )}
 
-        <Card className="border-violet-200/45 dark:border-violet-900/30 print-bg-preserve">
+        <Card className="border-violet-200/45 dark:border-violet-900/30">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Sparkles className="size-5 text-violet-600 dark:text-violet-400" />
@@ -120,7 +143,7 @@ export function PsychResultsView({
             <CardDescription>Percentile-style scores (0–100) vs reference line and optional leadership ideal.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2 print:hidden">
+            <div className="flex flex-wrap gap-2">
               {(
                 [
                   ["you", "You", "hsl(262 83% 58%)"],
@@ -143,7 +166,7 @@ export function PsychResultsView({
                 </button>
               ))}
             </div>
-            <div className="h-[380px] w-full min-w-0 print:hidden">
+            <div className="h-[380px] w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                   <PolarGrid 
@@ -206,28 +229,6 @@ export function PsychResultsView({
                   />
                 </RadarChart>
               </ResponsiveContainer>
-            </div>
-            <div className="hidden print:block space-y-1">
-              {OCEAN_TRAITS.map((t) => {
-                const p = result.traitPercentiles[t] ?? 0;
-                return (
-                  <div key={t} className="flex justify-between text-sm py-0.5">
-                    <span>{oceanDisplayName(t)}</span>
-                    <span className="font-medium">~{p.toFixed(0)}th percentile</span>
-                  </div>
-                );
-              })}
-              {roleProfileKeys.length > 0 && (
-                <div className="pt-2 mt-2 border-t space-y-1">
-                  <p className="text-xs font-medium">Role fit</p>
-                  {roleProfileKeys.map((k) => (
-                    <div key={k} className="flex justify-between text-sm py-0.5">
-                      <span className="capitalize">{k.replace(/_/g, " ")}</span>
-                      <span className="font-medium">{result.roleMatches[k] ?? 0}%</span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -297,19 +298,71 @@ export function PsychResultsView({
           </CardContent>
         </Card>
 
-        <div className="flex justify-end print:hidden">
-          <Button
-            type="button"
-            variant="outline"
-            className="gap-2"
-            onClick={() => {
-              document.title = `Personality Profile — ${templateName} — BolderBrain`;
-              window.print();
-            }}
-          >
-            <Printer className="size-4" />
-            Export / print PDF
+        <div className="flex justify-end">
+          <Button type="button" className="gap-2" onClick={handleExport} disabled={exporting}>
+            {exporting ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
+            {exporting ? "Generating PDF…" : "Download PDF"}
           </Button>
+        </div>
+      </div>
+
+      {/* Hidden off-screen PDF content */}
+      <div id="psych-pdf-content" className="fixed left-[-9999px] top-0 w-[820px] bg-white p-10" style={{ zIndex: -1 }}>
+        <div data-pdf-card className="mb-8">
+          <p className="text-3xl font-bold text-gray-900 mb-1">{templateName}</p>
+          <p className="text-sm text-gray-500 mb-6">Personality Profile Report</p>
+          <p className="text-sm text-gray-700 leading-relaxed mb-4">{result.summaryLine}</p>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-300">
+                <th className="text-left font-semibold text-gray-700 py-2">Trait</th>
+                <th className="text-right font-semibold text-gray-700 py-2">Percentile</th>
+              </tr>
+            </thead>
+            <tbody>
+              {OCEAN_TRAITS.map((t) => {
+                const p = result.traitPercentiles[t] ?? 0;
+                return (
+                  <tr key={t} className="border-b border-gray-100">
+                    <td className="py-2 text-gray-800">{oceanDisplayName(t)}</td>
+                    <td className="py-2 text-right text-gray-700">~{p.toFixed(0)}th</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {roleProfileKeys.length > 0 && (
+          <div data-pdf-card className="mb-8">
+            <p className="text-base font-semibold text-gray-900 mb-3">Role fit</p>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-300">
+                  <th className="text-left font-semibold text-gray-700 py-2">Role</th>
+                  <th className="text-right font-semibold text-gray-700 py-2">Match</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roleProfileKeys.map((k) => (
+                  <tr key={k} className="border-b border-gray-100">
+                    <td className="py-2 text-gray-800 capitalize">{k.replace(/_/g, " ")}</td>
+                    <td className="py-2 text-right text-gray-700">{result.roleMatches[k] ?? 0}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div data-pdf-card className="mb-8">
+          <p className="text-base font-semibold text-gray-900 mb-3">AI team dynamics coaching note</p>
+          <div className="text-sm text-gray-700 leading-relaxed">{result.teamDynamicsText}</div>
+        </div>
+
+        <div data-pdf-card className="mb-8">
+          <p className="text-base font-semibold text-gray-900 mb-3">Career insights & watch-outs</p>
+          <div className="text-sm text-gray-700 leading-relaxed">{result.careerInsightsText}</div>
         </div>
       </div>
     </div>
