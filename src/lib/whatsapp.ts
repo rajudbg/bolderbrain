@@ -47,14 +47,14 @@ export async function getUserWhatsAppProfile(userId: string) {
 export async function upsertUserWhatsAppProfile(userId: string, phoneNumber: string, isOptedIn: boolean) {
   return prisma.userWhatsAppProfile.upsert({
     where: { userId },
-    create: { userId, phoneNumber, isOptedIn },
-    update: { phoneNumber, isOptedIn },
+    create: { userId, phoneNumber, optedIn: isOptedIn },
+    update: { phoneNumber, optedIn: isOptedIn },
   });
 }
 
 export async function notifyUserOnWhatsApp(userId: string, message: string) {
   const profile = await getUserWhatsAppProfile(userId);
-  if (!profile || !profile.isOptedIn || !profile.phoneNumber) return false;
+  if (!profile || !profile.optedIn || !profile.phoneNumber) return false;
   try {
     await sendWhatsAppMessage(profile.phoneNumber, message);
     return true;

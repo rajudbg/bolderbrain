@@ -40,7 +40,7 @@ export async function POST(req: Request) {
                 if (profile) {
                   await prisma.userWhatsAppProfile.update({
                     where: { userId: profile.userId },
-                    data: { isOptedIn: text === 'start' },
+                    data: { optedIn: text === 'start' },
                   });
                 }
               }

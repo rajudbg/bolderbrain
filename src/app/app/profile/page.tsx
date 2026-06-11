@@ -56,7 +56,7 @@ export default async function ProfilePage() {
         <CardContent>
           <WhatsAppProfileClient 
             initialPhone={waProfile?.phoneNumber ?? ""} 
-            initialOptIn={waProfile?.isOptedIn ?? false} 
+            initialOptIn={waProfile?.optedIn ?? false} 
           />
         </CardContent>
       </Card>

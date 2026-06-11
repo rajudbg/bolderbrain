@@ -53,7 +53,7 @@ export async function upsertGridPlacement(
       organizationId_employeeId_cycleId: {
         organizationId: orgId,
         employeeId,
-        cycleId: cycleId ?? null,
+        cycleId: cycleId ?? "",
       },
     },
     create: {
@@ -64,7 +64,7 @@ export async function upsertGridPlacement(
       potentialScore,
       cellLabel,
       notes: notes || null,
-      cycleId: cycleId ?? null,
+      cycleId: cycleId ?? "",
       isAutoSuggested: false,
     },
     update: {
@@ -120,7 +120,7 @@ export async function autoSuggestPlacements(orgId: string, placedById: string) {
         organizationId_employeeId_cycleId: {
           organizationId: orgId,
           employeeId: uid,
-          cycleId: null,
+          cycleId: "",
         },
       },
       create: {
@@ -131,7 +131,7 @@ export async function autoSuggestPlacements(orgId: string, placedById: string) {
         potentialScore: potBucket,
         cellLabel,
         isAutoSuggested: true,
-        cycleId: null,
+        cycleId: "",
       },
       update: {
         performanceScore: perfBucket,

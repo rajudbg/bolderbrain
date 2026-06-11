@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { normalizeHrmsPayload } from '@/lib/hrms/normalizers';
+import { HrmsProvider } from '@/generated/prisma/enums';
 
 export async function POST(req: Request, { params }: { params: Promise<{ provider: string }> }) {
   try {
     const { provider } = await params;
+    const providerEnum = provider as HrmsProvider;
     const body = await req.json();
     const token = req.headers.get('Authorization')?.replace('Bearer ', '');
 
@@ -14,7 +16,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ provide
 
     // Find integration by webhook secret
     const integration = await prisma.hrmsIntegration.findFirst({
-      where: { provider, webhookSecret: token },
+      where: { provider: providerEnum, webhookSecret: token },
     });
 
     if (!integration) {
@@ -22,7 +24,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ provide
     }
 
     const orgId = integration.organizationId;
-    const employees = normalizeHrmsPayload(provider, body);
+    const employees = normalizeHrmsPayload(providerEnum, body);
 
     for (const emp of employees) {
       if (!emp.email) continue;
