@@ -103,8 +103,9 @@ export function EqResultsView({
     <div className="relative min-h-screen bg-[#0F0F11] text-white">
       <EqAmbientBackground />
 
-      <div className="relative z-10 mx-auto max-w-6xl space-y-10 px-4 py-10">
-        <header className="space-y-2 text-center md:text-left">
+      <div className="relative z-10 mx-auto max-w-6xl space-y-10 px-4 py-10 print:max-w-none print:px-0 print:py-0">
+        <h1 className="hidden print:block text-2xl font-bold mb-4">{templateName}</h1>
+        <header className="space-y-2 text-center md:text-left print:hidden">
           <p className="text-caption-cerebral">Emotional intelligence</p>
           <h1 className="font-heading text-4xl font-bold tracking-tight text-transparent bg-gradient-to-r from-white to-white/60 bg-clip-text md:text-5xl">
             Your EQ Profile
@@ -227,7 +228,7 @@ export function EqResultsView({
           <div className={cn(glassCardClassName("p-5"), "border-white/10 bg-white/[0.02]")}>
             <h3 className="font-heading mb-1 text-base font-semibold text-white/90">Thermal bars</h3>
             <p className="mb-2 text-xs text-white/50">Score drives fill color (blue → purple → pink → amber)</p>
-            <div className="h-[min(280px,40vh)] w-full">
+            <div className="h-[min(280px,40vh)] w-full print:hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 8, right: 8, left: 0, bottom: 32 }}>
                   <XAxis
@@ -262,14 +263,23 @@ export function EqResultsView({
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            <div className="hidden print:block space-y-1">
+              {barData.map((d) => (
+                <div key={d.key} className="flex justify-between text-sm py-0.5">
+                  <span>{domainDisplayName(d.key as EqDomainKey)}</span>
+                  <span className="font-medium">{d.score.toFixed(0)}%</span>
+                </div>
+              ))}
+              <p className="text-xs pt-2 border-t mt-2">Composite: {Math.round(result.compositeScore)} · ~{result.percentileComposite.toFixed(0)}th percentile</p>
+            </div>
           </div>
         </div>
 
         {/* Self-Awareness × Self-Regulation quadrant — thermal styling */}
-        <div className={cn(glassCardClassName("p-5 print-bg-preserve"), "border-white/10 bg-white/[0.02]")}>
+        <div className={cn(glassCardClassName("p-5"), "border-white/10 bg-white/[0.02]")}>
           <h3 className="font-heading mb-1 text-base font-semibold text-white/90">Self-Awareness × Self-Regulation</h3>
           <p className="mb-4 text-xs text-white/50">Zone: {result.quadrantLabel}</p>
-          <div className="relative mx-auto aspect-square w-full max-w-[280px]">
+          <div className="relative mx-auto aspect-square w-full max-w-[280px] print:hidden">
             <div
               className="absolute inset-0 grid grid-cols-2 grid-rows-2 overflow-hidden rounded-xl border border-white/10"
               style={{
@@ -297,7 +307,11 @@ export function EqResultsView({
               title="You"
             />
           </div>
-          <p className="mt-3 text-center text-xs text-white/50">X = Self-Regulation · Y = Self-Awareness (0–100)</p>
+          <div className="hidden print:block space-y-1">
+            <p className="text-sm">Zone: {result.quadrantLabel}</p>
+            <p className="text-xs">X (Self-Regulation): {Math.round(x)}% · Y (Self-Awareness): {Math.round(y)}%</p>
+          </div>
+          <p className="mt-3 text-center text-xs text-white/50 print:hidden">X = Self-Regulation · Y = Self-Awareness (0–100)</p>
         </div>
 
         {/* Emotional Blueprint */}

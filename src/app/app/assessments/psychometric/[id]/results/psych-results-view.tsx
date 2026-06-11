@@ -74,8 +74,9 @@ export function PsychResultsView({
 
   return (
     <div className="from-violet-50/40 via-background min-h-screen bg-gradient-to-b to-background dark:from-violet-950/20">
-      <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
-        <header className="space-y-2">
+      <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 print:max-w-none print:px-0 print:py-0">
+        <h1 className="hidden print:block text-2xl font-bold mb-4">{templateName}</h1>
+        <header className="space-y-2 print:hidden">
           <p className="text-sm font-medium tracking-wide text-violet-700 uppercase dark:text-violet-400">
             Personality profile
           </p>
@@ -119,7 +120,7 @@ export function PsychResultsView({
             <CardDescription>Percentile-style scores (0–100) vs reference line and optional leadership ideal.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 print:hidden">
               {(
                 [
                   ["you", "You", "hsl(262 83% 58%)"],
@@ -142,7 +143,7 @@ export function PsychResultsView({
                 </button>
               ))}
             </div>
-            <div className="h-[380px] w-full min-w-0">
+            <div className="h-[380px] w-full min-w-0 print:hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                   <PolarGrid 
@@ -205,6 +206,28 @@ export function PsychResultsView({
                   />
                 </RadarChart>
               </ResponsiveContainer>
+            </div>
+            <div className="hidden print:block space-y-1">
+              {OCEAN_TRAITS.map((t) => {
+                const p = result.traitPercentiles[t] ?? 0;
+                return (
+                  <div key={t} className="flex justify-between text-sm py-0.5">
+                    <span>{oceanDisplayName(t)}</span>
+                    <span className="font-medium">~{p.toFixed(0)}th percentile</span>
+                  </div>
+                );
+              })}
+              {roleProfileKeys.length > 0 && (
+                <div className="pt-2 mt-2 border-t space-y-1">
+                  <p className="text-xs font-medium">Role fit</p>
+                  {roleProfileKeys.map((k) => (
+                    <div key={k} className="flex justify-between text-sm py-0.5">
+                      <span className="capitalize">{k.replace(/_/g, " ")}</span>
+                      <span className="font-medium">{result.roleMatches[k] ?? 0}%</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
