@@ -79,10 +79,11 @@ export function EqResultsView({
 
   const handleExport = useCallback(async () => {
     setExporting(true);
-    await new Promise((r) => setTimeout(r, 50));
+    const el = document.getElementById("eq-pdf-content");
+    if (el) el.classList.remove("hidden");
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 200)));
     try {
       const sections: { element: HTMLElement; title?: string }[] = [];
-      const el = document.getElementById("eq-pdf-content");
       if (el) {
         const cards = el.querySelectorAll("[data-pdf-card]");
         cards.forEach((c) => sections.push({ element: c as HTMLElement }));
@@ -94,7 +95,10 @@ export function EqResultsView({
         sections,
         filename: `eq-profile_${templateName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
       });
+    } catch (err) {
+      console.error("PDF export failed", err);
     } finally {
+      if (el) el.classList.add("hidden");
       setExporting(false);
     }
   }, [templateName]);
@@ -467,8 +471,8 @@ export function EqResultsView({
         </div>
       </div>
 
-      {/* Hidden off-screen PDF content */}
-      <div id="eq-pdf-content" className="fixed left-[-9999px] top-0 w-[820px] bg-white p-10" style={{ zIndex: -1 }}>
+      {/* Hidden PDF content — revealed during export for html2canvas capture */}
+      <div id="eq-pdf-content" className="hidden fixed top-0 left-0 w-[820px] bg-white p-10" style={{ zIndex: -1 }}>
         <div data-pdf-card className="mb-8">
           <p className="text-3xl font-bold text-gray-900 mb-1">{templateName}</p>
           <p className="text-sm text-gray-500 mb-6">EQ Profile Report</p>
