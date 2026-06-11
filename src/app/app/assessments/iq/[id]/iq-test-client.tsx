@@ -140,7 +140,6 @@ export function IqTestClient({ payload }: { payload: IqAttemptPayload }) {
         flaggedIds: fl.length ? fl : undefined,
       });
       router.push(`/app/assessments/iq/${attempt.id}/results`);
-      router.refresh();
     } catch (e) {
       submittedOnce.current = false;
       toast.error(e instanceof Error ? e.message : "Submit failed");

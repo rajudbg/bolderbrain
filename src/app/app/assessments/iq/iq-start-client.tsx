@@ -39,7 +39,6 @@ export function IqStartClient({
     try {
       const { attemptId } = await startIqAttempt(templateId);
       router.push(`/app/assessments/iq/${attemptId}`);
-      router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not start attempt");
     } finally {
