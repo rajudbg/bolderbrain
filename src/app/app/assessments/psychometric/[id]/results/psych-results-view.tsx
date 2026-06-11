@@ -12,7 +12,8 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { Lock, Sparkles } from "lucide-react";
+import { Printer, Lock, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OCEAN_TRAITS, oceanDisplayName } from "@/lib/ocean-traits";
 
@@ -109,7 +110,7 @@ export function PsychResultsView({
           </Card>
         )}
 
-        <Card className="border-violet-200/45 dark:border-violet-900/30">
+        <Card className="border-violet-200/45 dark:border-violet-900/30 print-bg-preserve">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Sparkles className="size-5 text-violet-600 dark:text-violet-400" />
@@ -272,6 +273,21 @@ export function PsychResultsView({
             <MarkdownRenderer content={result.careerInsightsText} />
           </CardContent>
         </Card>
+
+        <div className="flex justify-end print:hidden">
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              document.title = `Personality Profile — ${templateName} — BolderBrain`;
+              window.print();
+            }}
+          >
+            <Printer className="size-4" />
+            Export / print PDF
+          </Button>
+        </div>
       </div>
     </div>
   );

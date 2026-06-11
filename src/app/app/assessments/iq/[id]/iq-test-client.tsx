@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Expand, Flag } from "lucide-react";
+import { AlertTriangle, Expand, Flag, Brain } from "lucide-react";
 import { AmbientBackground } from "@/components/cerebral-glass";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -109,6 +109,7 @@ export function IqTestClient({ payload }: { payload: IqAttemptPayload }) {
     Math.max(0, Math.floor((new Date(attempt.endsAt).getTime() - Date.now()) / 1000)),
   );
   const [submitting, setSubmitting] = useState(false);
+  const [submitPhase, setSubmitPhase] = useState<"submitting" | "analyzing" | "generating">("submitting");
   const tabWarned = useRef(false);
   const submittedOnce = useRef(false);
   const intervalRef = useRef<number | null>(null);
@@ -132,13 +133,17 @@ export function IqTestClient({ payload }: { payload: IqAttemptPayload }) {
     if (submittedOnce.current) return;
     submittedOnce.current = true;
     setSubmitting(true);
+    setSubmitPhase("submitting");
     try {
       const fl = flaggedListRef.current;
+      setSubmitPhase("analyzing");
       await submitIqAttempt({
         attemptId: attempt.id,
         responses: responsesRef.current,
         flaggedIds: fl.length ? fl : undefined,
       });
+      setSubmitPhase("generating");
+      await new Promise((r) => setTimeout(r, 1800));
       router.push(`/app/assessments/iq/${attempt.id}/results`);
     } catch (e) {
       submittedOnce.current = false;
@@ -237,6 +242,46 @@ export function IqTestClient({ payload }: { payload: IqAttemptPayload }) {
 
   function prevReview() {
     if (reviewPos > 0) setReviewPos((p) => p - 1);
+  }
+
+  if (submitting) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#030305]"
+      >
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(99,102,241,0.12),transparent)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_40%_30%_at_50%_70%,rgba(236,72,153,0.08),transparent)]" />
+        <motion.div
+          animate={{ scale: [1, 1.06, 1] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          className="relative mb-8"
+        >
+          <div className="absolute inset-0 animate-pulse rounded-full bg-indigo-500/20 blur-3xl" />
+          <div className="relative flex size-24 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl">
+            <Brain className="size-10 text-indigo-400" />
+          </div>
+        </motion.div>
+        <p className="font-heading mb-2 text-xl font-semibold text-white/90">
+          {submitPhase === "submitting" && "Submitting your responses…"}
+          {submitPhase === "analyzing" && "Analyzing your answers…"}
+          {submitPhase === "generating" && "Generating your report…"}
+        </p>
+        <p className="text-sm text-white/40">Please wait, this will only take a moment.</p>
+        <div className="mt-8 flex items-center gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="size-2 rounded-full bg-indigo-500"
+              animate={{ opacity: [0.2, 1, 0.2] }}
+              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.25 }}
+            />
+          ))}
+        </div>
+      </motion.div>
+    );
   }
 
   if (!current || !parsed) return null;

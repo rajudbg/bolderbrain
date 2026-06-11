@@ -51,7 +51,7 @@ export function IqResultsView({
           <h1 className="text-3xl font-semibold tracking-tight">{templateName}</h1>
         </header>
 
-        <Card className="border-border/60 overflow-hidden print:border print:shadow-none">
+        <Card className="border-border/60 overflow-hidden print-bg-preserve print:border print:shadow-none">
           <CardHeader className="from-primary/5 via-background to-background border-b bg-gradient-to-br pb-8">
             <CardDescription className="text-xs uppercase">Standard score (μ=100, σ=15)</CardDescription>
             <div className="flex flex-wrap items-end gap-4">
@@ -79,7 +79,7 @@ export function IqResultsView({
           </CardContent>
         </Card>
 
-        <Card className="print:break-inside-avoid">
+        <Card className="print-bg-preserve print:break-inside-avoid">
           <CardHeader>
             <CardTitle className="text-base">Score distribution</CardTitle>
             <CardDescription>Normal curve (μ=100, σ=15) with your score marked.</CardDescription>
@@ -123,7 +123,15 @@ export function IqResultsView({
       </div>
 
       <div className="flex justify-end print:hidden">
-        <Button type="button" variant="outline" className="gap-2" onClick={() => window.print()}>
+        <Button
+          type="button"
+          variant="outline"
+          className="gap-2"
+          onClick={() => {
+            document.title = `Cognitive Assessment — ${templateName} — BolderBrain`;
+            window.print();
+          }}
+        >
           <Printer className="size-4" />
           Export / print PDF
         </Button>

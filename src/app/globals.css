@@ -469,6 +469,20 @@
     border-color: #e5e5e5 !important;
   }
 
+  .print-bg-preserve,
+  .print-bg-preserve > div {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .recharts-wrapper,
+  .recharts-surface,
+  .recharts-responsive-container svg {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    forced-color-adjust: none !important;
+  }
+
   table {
     border-collapse: collapse !important;
     width: 100% !important;
@@ -491,6 +505,29 @@
   .ai-aurora-bg, [class*="bg-gradient-to"] {
     background: white !important;
     background-image: none !important;
+  }
+
+  .recharts-responsive-container,
+  .recharts-wrapper {
+    width: 100% !important;
+    height: 320px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .recharts-surface {
+    background: transparent !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .recharts-text tspan,
+  .recharts-cartesian-axis-tick-value {
+    fill: #333 !important;
+  }
+
+  span.recharts-legend-item-text {
+    color: #555 !important;
   }
 
   [class*="lg:pl-"], [class*="pl-72"], [class*="ml-"] {

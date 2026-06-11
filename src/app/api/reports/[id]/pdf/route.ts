@@ -74,31 +74,51 @@ export async function GET(
       color: rgb(0.2, 0.2, 0.2),
     });
 
-    page.drawText("Summary of Results", {
-      x: 50,
-      y: height - 180,
-      size: 18,
-      font: timesRomanBold,
-      color: rgb(0.1, 0.1, 0.1),
-    });
-
-    // Score or result summary
-    const summaryText = "Detailed scores and insights are available in the platform.";
+    const compositeScore = result.compositeScore ?? result.standardScore ?? null;
+    const percentile = result.percentile ?? result.percentileComposite ?? null;
     
-    page.drawText(summaryText, {
-      x: 50,
-      y: height - 220,
-      size: 12,
-      font: timesRomanFont,
-      color: rgb(0.3, 0.3, 0.3),
-    });
+    const yPos = height - 180;
+
+    if (compositeScore != null) {
+      page.drawText(`Composite Score: ${typeof compositeScore === 'number' ? compositeScore.toFixed(1) : compositeScore}`, {
+        x: 50,
+        y: yPos,
+        size: 14,
+        font: timesRomanFont,
+        color: rgb(0.2, 0.2, 0.2),
+      });
+    }
+
+    if (percentile != null) {
+      page.drawText(`Percentile: ${typeof percentile === 'number' ? percentile.toFixed(1) : percentile}`, {
+        x: 50,
+        y: yPos - 22,
+        size: 14,
+        font: timesRomanFont,
+        color: rgb(0.2, 0.2, 0.2),
+      });
+    }
+
+    if (result.computedAt) {
+      page.drawText(`Completed: ${new Date(result.computedAt).toLocaleDateString()}`, {
+        x: 50,
+        y: yPos - 44,
+        size: 14,
+        font: timesRomanFont,
+        color: rgb(0.2, 0.2, 0.2),
+      });
+    }
 
     const pdfBytes = await pdfDoc.save();
+
+    const templateType = (result.assessment.template.type || "report").toLowerCase().replace(/\s+/g, "-");
+    const safeName = subjectName.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "_");
+    const filename = `${templateType}_${safeName}.pdf`;
 
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="report_${resultId}.pdf"`,
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
 

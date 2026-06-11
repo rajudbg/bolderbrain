@@ -4,7 +4,7 @@ import { MarkdownRenderer } from "@/components/ai/markdown-renderer";
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Heart, TrendingUp, Sparkles } from "lucide-react";
+import { Printer, Heart, TrendingUp, Sparkles } from "lucide-react";
 import { EqAmbientBackground, glassCardClassName } from "@/components/cerebral-glass";
 import { Button } from "@/components/ui/button";
 import { EQ_DOMAIN_RESOURCES } from "@/lib/eq-resources";
@@ -119,7 +119,7 @@ export function EqResultsView({
         </header>
 
         {/* Composite — pulsing amber ring */}
-        <div className="flex flex-col items-center justify-center py-6">
+        <div className="flex flex-col items-center justify-center py-6 print-bg-preserve">
           <p className="text-caption-cerebral mb-4">Composite</p>
           <div className="relative flex size-44 items-center justify-center md:size-52">
             <div
@@ -189,7 +189,7 @@ export function EqResultsView({
         </div>
 
         {/* Thermal column heatmap + bar chart */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="print-bg-preserve grid gap-6 lg:grid-cols-2">
           <div className={cn(glassCardClassName("p-5"), "border-white/10 bg-white/[0.02]")}>
             <h3 className="font-heading mb-1 text-base font-semibold text-white/90">Intensity map</h3>
             <p className="mb-4 text-xs text-white/50">
@@ -266,7 +266,7 @@ export function EqResultsView({
         </div>
 
         {/* Self-Awareness × Self-Regulation quadrant — thermal styling */}
-        <div className={cn(glassCardClassName("p-5"), "border-white/10 bg-white/[0.02]")}>
+        <div className={cn(glassCardClassName("p-5 print-bg-preserve"), "border-white/10 bg-white/[0.02]")}>
           <h3 className="font-heading mb-1 text-base font-semibold text-white/90">Self-Awareness × Self-Regulation</h3>
           <p className="mb-4 text-xs text-white/50">Zone: {result.quadrantLabel}</p>
           <div className="relative mx-auto aspect-square w-full max-w-[280px]">
@@ -433,6 +433,21 @@ export function EqResultsView({
               );
             })}
           </div>
+        </div>
+
+        <div className="flex justify-end print:hidden">
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              document.title = `EQ Profile — ${templateName} — BolderBrain`;
+              window.print();
+            }}
+          >
+            <Printer className="size-4" />
+            Export / print PDF
+          </Button>
         </div>
       </div>
     </div>
