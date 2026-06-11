@@ -47,6 +47,7 @@ const navGroups = [
   {
     label: "Assessments",
     items: [
+      { href: "/admin/reviews", label: "Reviews", icon: Users },
       { href: "/admin/feedback-360", label: "360 feedback", icon: Users },
       { href: "/admin/assessment-programs", label: "Programs", icon: LayoutGrid },
       { href: "/app/assessments/eq", label: "EQ", icon: Heart },

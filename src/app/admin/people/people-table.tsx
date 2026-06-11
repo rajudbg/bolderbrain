@@ -1,8 +1,6 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,11 +27,13 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { updateMemberDepartment, updateMemberRole, setUserActive, getEmployeeDrawerDetails } from "@/app/admin/hr-actions";
+import { updateMemberDepartment, updateMemberRole, setUserActive, getEmployeeDrawerDetails, updateMemberManager } from "@/app/admin/hr-actions";
 import type { PeopleRow } from "@/lib/admin/queries";
 import { OrganizationRole } from "@/generated/prisma/enums";
 
-export function PeopleTable({ rows }: { rows: PeopleRow[] }) {
+type OrgMember = { userId: string; name: string | null; email: string | null };
+
+export function PeopleTable({ rows, allMembers }: { rows: PeopleRow[]; allMembers: OrgMember[] }) {
   const [q, setQ] = useState("");
   const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
   const filtered = useMemo(() => {
@@ -65,6 +65,7 @@ export function PeopleTable({ rows }: { rows: PeopleRow[] }) {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Department</TableHead>
+              <TableHead>Manager</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Active</TableHead>
               <TableHead className="w-[80px]"></TableHead>
@@ -77,6 +78,13 @@ export function PeopleTable({ rows }: { rows: PeopleRow[] }) {
                 <TableCell className="text-sm text-white/50">{r.email}</TableCell>
                 <TableCell>
                   <DepartmentEditor userId={r.userId} initial={r.department ?? ""} />
+                </TableCell>
+                <TableCell>
+                  <ManagerSelect
+                    userId={r.userId}
+                    currentManagerId={r.managerId}
+                    allMembers={allMembers}
+                  />
                 </TableCell>
                 <TableCell>
                   <RoleSelect userId={r.userId} initial={r.role} />
@@ -136,6 +144,42 @@ function DepartmentEditor({ userId, initial }: { userId: string; initial: string
         Save
       </Button>
     </form>
+  );
+}
+
+function ManagerSelect({ userId, currentManagerId, allMembers }: {
+  userId: string;
+  currentManagerId: string | null;
+  allMembers: OrgMember[];
+}) {
+  const [pending, startTransition] = useTransition();
+  const options = allMembers.filter(m => m.userId !== userId);
+  return (
+    <Select
+      value={currentManagerId ?? "none"}
+      onValueChange={(val) => {
+        startTransition(async () => {
+          try {
+            await updateMemberManager(userId, val === "none" ? null : val);
+            toast.success("Manager updated");
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Failed");
+          }
+        });
+      }}
+    >
+      <SelectTrigger className="h-8 w-[160px] text-xs" disabled={pending}>
+        <SelectValue placeholder="— No manager" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">— No manager</SelectItem>
+        {options.map(m => (
+          <SelectItem key={m.userId} value={m.userId}>
+            {m.name ?? m.email}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -207,6 +251,9 @@ function EmployeeDrawer({ userId, open, onOpenChange }: { userId: string; open: 
               <SheetTitle className="text-white/90 text-xl">{details.user.name ?? "Employee"}</SheetTitle>
               <SheetDescription className="text-white/50">
                 {details.user.email} • {details.user.department ?? "No department"}
+                {details.user.managerName && (
+                  <span className="block mt-1">Reports to: {details.user.managerName}</span>
+                )}
               </SheetDescription>
             </SheetHeader>
             

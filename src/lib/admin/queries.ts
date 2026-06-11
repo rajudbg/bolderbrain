@@ -711,6 +711,8 @@ export type PeopleRow = {
   department: string | null;
   role: OrganizationRole;
   isActive: boolean;
+  managerId: string | null;
+  managerName: string | null;
 };
 
 export type CompletionFunnel = {
@@ -827,8 +829,11 @@ export async function getWeeklyCompetencyTrends(orgId: string, range: DateRange)
 export async function getPeopleDirectory(orgId: string): Promise<PeopleRow[]> {
   const members = await prisma.organizationMember.findMany({
     where: { organizationId: orgId },
-    include: { user: { select: { id: true, name: true, email: true, isActive: true } } },
-    orderBy: { user: { email: "asc" } },
+    include: {
+      user: { select: { id: true, name: true, email: true, isActive: true } },
+      manager: { select: { name: true, email: true } },
+    },
+    orderBy: { user: { name: 'asc' } },
   });
   return members.map((m) => ({
     userId: m.user.id,
@@ -837,5 +842,7 @@ export async function getPeopleDirectory(orgId: string): Promise<PeopleRow[]> {
     department: m.department,
     role: m.role,
     isActive: m.user.isActive,
+    managerId: m.managerId,
+    managerName: m.manager?.name ?? m.manager?.email ?? null,
   }));
 }

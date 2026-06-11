@@ -36,6 +36,7 @@ const rosterRowSchema = z.object({
   name: z.string().trim().max(120).optional(),
   department: z.string().trim().max(120).optional(),
   role: rosterRoleSchema,
+  manager_email: z.string().trim().email().optional().or(z.literal('').transform(() => undefined)),
 });
 
 function parseRosterCsv(csv: string) {
@@ -44,10 +45,10 @@ function parseRosterCsv(csv: string) {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const rows = lines[0]?.toLowerCase().startsWith("email,") ? lines.slice(1) : lines;
+  const rows = lines[0]?.toLowerCase().startsWith("email") ? lines.slice(1) : lines;
   return rows.map((line, index) => {
-    const [email = "", name = "", department = "", role = ""] = line.split(",").map((cell) => cell.trim());
-    const parsed = rosterRowSchema.safeParse({ email, name, department, role });
+    const [email = "", name = "", department = "", role = "", manager_email = ""] = line.split(",").map((cell) => cell.trim());
+    const parsed = rosterRowSchema.safeParse({ email, name, department, role, manager_email });
     if (!parsed.success) {
       throw new Error(`Row ${index + 1}: enter email,name,department,role with a valid email.`);
     }
@@ -154,6 +155,20 @@ export async function importPeopleRoster(csv: string) {
       },
     });
     updatedMembers += 1;
+
+    // Set manager if manager_email is provided
+    if (row.manager_email) {
+      const managerUser = await prisma.user.findUnique({
+        where: { email: row.manager_email.toLowerCase() },
+        select: { id: true },
+      });
+      if (managerUser) {
+        await prisma.organizationMember.updateMany({
+          where: { userId: user.id, organizationId: orgId },
+          data: { managerId: managerUser.id },
+        });
+      }
+    }
   }
 
   revalidatePath("/admin/people");
@@ -231,7 +246,10 @@ export async function getEmployeeDrawerDetails(userId: string) {
   const [member, latest360, snapshots, activeActionsCount] = await Promise.all([
     prisma.organizationMember.findUnique({
       where: { userId_organizationId: { userId, organizationId: orgId } },
-      include: { user: { select: { name: true, email: true, isActive: true } } },
+      include: {
+        user: { select: { name: true, email: true, isActive: true } },
+        manager: { select: { name: true, email: true } },
+      },
     }),
     prisma.assessment.findFirst({
       where: { organizationId: orgId, subjectUserId: userId },
@@ -270,9 +288,43 @@ export async function getEmployeeDrawerDetails(userId: string) {
       department: member.department,
       role: member.role,
       isActive: member.user.isActive,
+      managerName: member.manager?.name ?? member.manager?.email ?? null,
     },
     latest360: latest360 ? { status: latest360.status, updatedAt: latest360.updatedAt, name: latest360.template.name } : null,
     competencies,
     activeActionsCount,
   };
+}
+
+export async function updateMemberManager(userId: string, managerId: string | null) {
+  const orgId = await requireAdminOrganizationId();
+  // Verify manager is in the same org (if provided)
+  if (managerId) {
+    const managerMember = await prisma.organizationMember.findUnique({
+      where: { userId_organizationId: { userId: managerId, organizationId: orgId } },
+    });
+    if (!managerMember) throw new Error('Manager not found in this organization');
+    // Prevent self-management
+    if (managerId === userId) throw new Error('An employee cannot be their own manager');
+  }
+  await prisma.organizationMember.update({
+    where: { userId_organizationId: { userId, organizationId: orgId } },
+    data: { managerId: managerId || null },
+  });
+  revalidatePath('/admin/people');
+}
+
+export async function getOrgMembers() {
+  const orgId = await requireAdminOrganizationId();
+  const members = await prisma.organizationMember.findMany({
+    where: { organizationId: orgId },
+    include: { user: { select: { id: true, name: true, email: true } } },
+    orderBy: { user: { name: 'asc' } },
+  });
+  return members.map(m => ({
+    userId: m.userId,
+    name: m.user.name,
+    email: m.user.email,
+    managerId: m.managerId,
+  }));
 }

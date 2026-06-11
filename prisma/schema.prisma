@@ -32,6 +32,7 @@ model User {
   accounts               Account[]
   sessions               Session[]
   organizationMembers    OrganizationMember[]
+  managedMembers         OrganizationMember[]      @relation("MemberManager")
   assessmentsAsSubject   Assessment[]              @relation("AssessmentSubject")
   assessmentsCreated     Assessment[]              @relation("AssessmentCreatedBy")
   assessmentEvaluators   AssessmentEvaluator[]
@@ -53,6 +54,11 @@ model User {
   auditLogs              AuditLog[]
   managerNotesWritten    ManagerNote[]             @relation("ManagerNotesWritten")
   managerNotesReceived   ManagerNote[]             @relation("ManagerNotesReceived")
+  reviewsAsEmployee      PerformanceReview[]       @relation("ReviewEmployee")
+  reviewsAsManager       PerformanceReview[]       @relation("ReviewManager")
+  talentGridPlacedBy     TalentGridPlacement[]     @relation("PlacedByUser")
+  talentGridPlacements   TalentGridPlacement[]     @relation("PlacedEmployee")
+  whatsAppProfile        UserWhatsAppProfile?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -125,6 +131,9 @@ model Organization {
   developmentGoals         DevelopmentGoal[]
   auditLogs                AuditLog[]
   managerNotes             ManagerNote[]
+  reviewCycles             ReviewCycle[]
+  talentGridPlacements     TalentGridPlacement[]
+  hrmsIntegrations         HrmsIntegration[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -137,9 +146,12 @@ model OrganizationMember {
   role           OrganizationRole
   /// Department / team label for org analytics (heatmap columns, filters).
   department     String?
+  /// Direct manager — FK to User (optional; used for 360 auto-routing, review assignments).
+  managerId      String?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  manager       User?        @relation("MemberManager", fields: [managerId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -147,6 +159,7 @@ model OrganizationMember {
   @@unique([userId, organizationId])
   @@index([organizationId])
   @@index([userId])
+  @@index([managerId])
 }
 
 // --- Assessment templates (polymorphic: 360, IQ, EQ, psychometric) ---
@@ -1139,5 +1152,179 @@ model ManagerNote {
   employee     User         @relation("ManagerNotesReceived", fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([managerId, employeeId])
+  @@index([organizationId])
+}
+
+// ─── Performance Reviews ─────────────────────────────────────────────────────
+
+enum ReviewCycleStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum ReviewStatus {
+  NOT_STARTED
+  SELF_REVIEW
+  MANAGER_REVIEW
+  CALIBRATION
+  SHARED
+  CLOSED
+}
+
+/// Annual / half-yearly appraisal cycle scoped to one org.
+model ReviewCycle {
+  id                String            @id @default(cuid())
+  organizationId    String
+  name              String            // e.g. "H1 2026 Appraisal"
+  description       String?           @db.Text
+  reviewPeriodStart DateTime
+  reviewPeriodEnd   DateTime
+  selfOpenAt        DateTime
+  selfCloseAt       DateTime
+  managerOpenAt     DateTime
+  managerCloseAt    DateTime
+  calibrationAt     DateTime?
+  /// 1-5 stars (default for India)
+  maxRating         Float             @default(5)
+  status            ReviewCycleStatus @default(DRAFT)
+  /// Org-wide goals: [{title, description}]
+  goals             Json?
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reviews      PerformanceReview[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId])
+}
+
+/// One review record per employee per cycle.
+model PerformanceReview {
+  id             String       @id @default(cuid())
+  cycleId        String
+  organizationId String
+  employeeId     String
+  managerId      String?
+  status         ReviewStatus @default(NOT_STARTED)
+
+  /// Self-review
+  selfRating      Float?
+  selfSummary     String?  @db.Text
+  /// [{goal, achievement, rating}]
+  selfGoals       Json?
+  selfSubmittedAt DateTime?
+
+  /// Manager review
+  managerRating      Float?
+  managerSummary     String?  @db.Text
+  managerGoals       Json?
+  managerSubmittedAt DateTime?
+
+  /// Calibration / final
+  finalRating      Float?
+  calibrationNotes String?  @db.Text
+  sharedAt         DateTime?
+  closedAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cycle    ReviewCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  employee User        @relation("ReviewEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  manager  User?       @relation("ReviewManager", fields: [managerId], references: [id], onDelete: SetNull)
+
+  @@unique([cycleId, employeeId])
+  @@index([organizationId, status])
+  @@index([cycleId])
+  @@index([employeeId])
+  @@index([managerId])
+}
+
+// ─── 9-Box Talent Grid ───────────────────────────────────────────────────────
+
+/// Admin-placed employee in the 9-box performance × potential grid.
+model TalentGridPlacement {
+  id             String  @id @default(cuid())
+  organizationId String
+  /// Optional link to a review cycle for historical snapshots.
+  cycleId        String?
+  employeeId     String
+  /// HR admin who placed this employee.
+  placedById     String
+
+  /// 1–3: 1=Low, 2=Medium, 3=High
+  performanceScore Float
+  /// 1–3: 1=Low, 2=Medium, 3=High
+  potentialScore   Float
+  notes            String? @db.Text
+  /// Derived label: "Star", "High Potential", "Core Player", etc.
+  cellLabel        String
+  /// When true, derived from assessment data not manually placed.
+  isAutoSuggested  Boolean @default(false)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employee     User         @relation("PlacedEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  placedBy     User         @relation("PlacedByUser", fields: [placedById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, employeeId, cycleId])
+  @@index([organizationId])
+  @@index([employeeId])
+}
+
+// ─── WhatsApp Opt-In ─────────────────────────────────────────────────────────
+
+/// Employee WhatsApp number (E.164) for notification delivery.
+model UserWhatsAppProfile {
+  userId      String  @id
+  /// E.164 format: +919876543210
+  phoneNumber String
+  isVerified  Boolean  @default(false)
+  optedIn     Boolean  @default(true)
+  /// 6-digit OTP sent to verify ownership
+  pendingOtp  String?
+  otpExpiresAt DateTime?
+  verifiedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── HRMS Webhook Integration ────────────────────────────────────────────────
+
+enum HrmsProvider {
+  DARWINBOX
+  KEKA
+  GREYTHR
+  BAMBOOHR
+  GENERIC
+}
+
+/// Inbound webhook integration from an external HRMS.
+model HrmsIntegration {
+  id             String       @id @default(cuid())
+  organizationId String
+  provider       HrmsProvider
+  /// HMAC-SHA256 secret for payload signature validation.
+  webhookSecret  String
+  isActive       Boolean      @default(true)
+  lastSyncAt     DateTime?
+  /// { created, updated, deactivated, errors } from last sync.
+  syncStats      Json?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, provider])
   @@index([organizationId])
 }

@@ -3,12 +3,18 @@ import prisma from "@/lib/prisma";
 import { SettingsForm } from "./settings-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { HrmsIntegrationClient } from "./hrms-integration-client";
 
 export default async function SettingsPage() {
   const orgId = await requireAdminOrganizationId();
   const org = await prisma.organization.findUnique({ where: { id: orgId } });
   
   if (!org) return null;
+
+  const integrations = await prisma.hrmsIntegration.findMany({
+    where: { organizationId: orgId },
+    orderBy: { createdAt: 'desc' },
+  });
 
   return (
     <div className="space-y-8">
@@ -23,6 +29,16 @@ export default async function SettingsPage() {
       <div className="grid gap-8">
         <SettingsForm orgName={org.name} orgSlug={org.slug} />
         
+        <Card>
+          <CardHeader>
+            <CardTitle>HRMS Integrations</CardTitle>
+            <CardDescription>Sync employee directory automatically via webhook.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <HrmsIntegrationClient integrations={integrations} />
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Plan & Billing</CardTitle>

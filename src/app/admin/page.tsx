@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowDownRight, ArrowUpRight, AlertTriangle } from "lucide-react";

@@ -5,10 +5,14 @@ import { testAiConnectionEmployee } from "@/app/actions/ai-connection";
 import { AiConnectionTestCard } from "@/components/profile/ai-connection-test";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getUserWhatsAppProfile } from "@/lib/whatsapp";
+import { WhatsAppProfileClient } from "./whatsapp-profile-client";
 
 export default async function ProfilePage() {
   const session = await auth();
   if (!session?.user) redirect("/login?callbackUrl=/app/profile");
+  
+  const waProfile = session.user.id ? await getUserWhatsAppProfile(session.user.id) : null;
 
   const claims = session.user.tenants ?? [];
   const orgIds = claims.map((c) => c.organizationId);
@@ -41,6 +45,19 @@ export default async function ProfilePage() {
             <span className="text-muted-foreground">Email:</span>{" "}
             <span className="font-medium">{session.user.email ?? "—"}</span>
           </p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+          <CardDescription>Manage how you receive alerts and updates.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <WhatsAppProfileClient 
+            initialPhone={waProfile?.phoneNumber ?? ""} 
+            initialOptIn={waProfile?.isOptedIn ?? false} 
+          />
         </CardContent>
       </Card>
 

@@ -32,6 +32,7 @@ const employeeNav = [
   { href: "/app/training", label: "My learning", icon: GraduationCap },
   { href: "/app/development", label: "Development", icon: Flame },
   { href: "/assessments", label: "My assessments", icon: ClipboardList },
+  { href: "/app/reviews", label: "My reviews", icon: ClipboardList },
   { href: "/app/assessments/iq", label: "Cognitive (IQ)", icon: Brain },
   { href: "/app/assessments/eq", label: "EQ", icon: Heart },
   { href: "/app/assessments/psychometric", label: "Personality", icon: Sparkles },
@@ -62,6 +63,9 @@ function navActive(pathname: string, href: string): boolean {
   }
   if (href === "/app/development") {
     return pathname === "/app/development" || pathname.startsWith("/app/development/");
+  }
+  if (href === "/app/reviews") {
+    return pathname === "/app/reviews" || pathname.startsWith("/app/reviews/");
   }
   if (href === "/app/assessments/iq") {
     return pathname === "/app/assessments/iq" || pathname.startsWith("/app/assessments/iq/");

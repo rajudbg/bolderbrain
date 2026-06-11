@@ -288,63 +288,6 @@ export function TnaDashboardClient(props: {
             </div>
             <p className="text-xs text-white/35">~{memberCount} members in org · {inventory.length} inventory cells</p>
           </section>
-          
-          <section className="space-y-3">
-            <h2 className="font-heading text-xl font-semibold text-white/90">Organization heatmap</h2>
-            <p className="max-w-3xl text-sm text-white/50">
-              Employees × competencies — hover for scores. Colors: critical (red), high (amber), met (green), exceeds (blue).
-            </p>
-            <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02] p-3">
-              <table className="min-w-full border-collapse text-xs">
-                <thead>
-                  <tr>
-                    <th className="sticky left-0 z-10 bg-[#0F0F11] px-2 py-2 text-left font-medium text-white/55">
-                      Employee
-                    </th>
-                    {competencies.map((c) => (
-                      <th key={c.id} className="min-w-[100px] px-1 py-2 text-center font-medium text-white/45">
-                        {c.name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {userOrder.map((uid) => {
-                    const label =
-                      inventory.find((r) => r.userId === uid)?.user.name ??
-                      inventory.find((r) => r.userId === uid)?.user.email ??
-                      uid;
-                    return (
-                      <tr key={uid}>
-                        <td className="sticky left-0 z-10 bg-[#0F0F11]/95 px-2 py-1 text-white/75">{label}</td>
-                        {competencies.map((c) => {
-                          const cell = invMap.get(`${uid}:${c.id}`);
-                          if (!cell) {
-                            return (
-                              <td key={c.id} className="border border-white/[0.04] p-0">
-                                <div className="h-8 bg-white/[0.03]" title="No snapshot" />
-                              </td>
-                            );
-                          }
-                          return (
-                            <td key={c.id} className="border border-white/[0.04] p-0">
-                              <div
-                                className={`flex h-8 items-center justify-center px-0.5 ${severityCellClass(cell.severity)}`}
-                                title={`${cell.competency.name}: current ${cell.currentScore.toFixed(2)} / target ${cell.targetScore.toFixed(2)} (gap ${cell.gap.toFixed(2)})`}
-                              >
-                                {cell.gap.toFixed(1)}
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-xs text-white/35">~{memberCount} members in org · {inventory.length} inventory cells</p>
-          </section>
         </TabsContent>
 
         <TabsContent value="needs" className="space-y-8">
