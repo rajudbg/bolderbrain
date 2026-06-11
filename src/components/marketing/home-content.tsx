@@ -10,7 +10,6 @@ import {
   Users,
   Sparkles,
   ArrowRight,
-  Quote,
   Search,
   GraduationCap,
   LineChart,
@@ -106,16 +105,22 @@ const testimonials = [
     quote: "BolderBrain transformed how we approach talent development. The AI insights save our HR team hours every week.",
     author: "VP of People",
     role: "Leading Indian IT Services Company",
+    initials: "VP",
+    tag: "IT Services",
   },
   {
     quote: "Finally, a platform that connects assessments to actual development. Our completion rates increased 40% in the first quarter.",
     author: "Head of L&D",
     role: "Top 5 Indian Bank",
+    initials: "LD",
+    tag: "BFSI",
   },
   {
     quote: "The psychometric profiling helped us build more balanced teams. The integrated TNA workflow alone replaced three separate tools.",
     author: "Chief People Officer",
     role: "Indian Enterprise SaaS Unicorn",
+    initials: "CP",
+    tag: "SaaS",
   },
 ];
 
@@ -452,13 +457,20 @@ export function HomeContent() {
         </div>
       </section>
 
-      {/* Testimonials */}
+        {/* Testimonials */}
       <section className="relative py-24 lg:py-32 border-t border-white/5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 text-amber-300 text-sm font-medium mb-4">
+              <Sparkles className="h-4 w-4" />
+              <span>Real results from real teams</span>
+            </div>
             <h2 className="font-heading text-3xl md:text-4xl font-bold text-white mb-4">
               Trusted by HR leaders worldwide
             </h2>
+            <p className="text-lg text-white/60 max-w-2xl mx-auto">
+              See how organizations are using BolderBrain to transform their people strategy.
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -469,13 +481,51 @@ export function HomeContent() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="card-premium group"
+                className="group relative flex flex-col rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6 transition-all duration-300 ease-out hover:-translate-y-1 hover:border-white/15 hover:bg-white/[0.05] hover:shadow-xl hover:shadow-indigo-500/5"
               >
-                <Quote className="h-8 w-8 text-indigo-400/50 mb-4" />
-                <p className="text-white/80 mb-6 leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
-                <div>
-                  <div className="font-semibold text-white">{t.author}</div>
-                  <div className="text-sm text-white/50">{t.role}</div>
+                {/* Top accent line */}
+                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                {/* Decorative quote mark */}
+                <div className="absolute top-5 right-5 text-5xl font-heading font-bold leading-none text-white/[0.04] select-none">
+                  &ldquo;
+                </div>
+
+                {/* Avatar row */}
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-sm font-semibold text-indigo-300">
+                    <div className="absolute inset-0 rounded-full ring-1 ring-white/10 ring-inset" />
+                    {t.initials}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-white">{t.author}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-white/50 truncate">{t.role}</span>
+                      <span className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quote */}
+                <div className="relative flex-1">
+                  <p className="text-sm text-white/70 leading-relaxed">
+                    <span className="text-indigo-400/60">&ldquo;</span>
+                    {t.quote}
+                    <span className="text-indigo-400/60">&rdquo;</span>
+                  </p>
+                </div>
+
+                {/* Bottom row */}
+                <div className="mt-6 flex items-center justify-between border-t border-white/[0.06] pt-4">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-white/[0.04] px-2 py-0.5 text-[11px] font-medium text-white/40">
+                    {t.tag}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400/60">
+                    <span className="h-1 w-1 rounded-full bg-emerald-400/60" />
+                    Verified
+                  </span>
                 </div>
               </motion.div>
             ))}
