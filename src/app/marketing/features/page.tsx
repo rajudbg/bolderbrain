@@ -22,8 +22,6 @@ import {
   LayoutTemplate,
   Terminal,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
 const assessmentFeatures = [
   {
     icon: Target,
@@ -171,9 +169,7 @@ export default function FeaturesPage() {
 
       {/* Assessment Types */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-24">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-white/40 mb-8">
-          Assessment Capabilities
-        </h2>
+        <div className="text-label mb-8">Assessment Capabilities</div>
         <div className="grid lg:grid-cols-2 gap-6">
           {assessmentFeatures.map((feature, i) => (
             <motion.div
@@ -182,10 +178,7 @@ export default function FeaturesPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className={cn(
-                "p-8 rounded-2xl border border-white/10 bg-white/[0.03]",
-                "hover:bg-white/[0.05] transition-all"
-              )}
+              className="card-premium p-8"
             >
               <div className="flex items-start gap-4 mb-4">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center shrink-0">
@@ -211,9 +204,7 @@ export default function FeaturesPage() {
 
       {/* Platform Features Grid */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-white/40 mb-8">
-          Platform Features
-        </h2>
+        <div className="text-label mb-8">Platform Features</div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {platformFeatures.map((feature, i) => (
             <motion.div
@@ -222,10 +213,7 @@ export default function FeaturesPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className={cn(
-                "p-6 rounded-xl border border-white/5 bg-white/[0.02]",
-                "hover:bg-white/[0.04] hover:border-white/10 transition-all"
-              )}
+              className="p-6 rounded-2xl border border-white/10 bg-white/[0.03] transition-all duration-300 ease-out hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06]"
             >
               <feature.icon className="h-5 w-5 text-indigo-400 mb-3" />
               <h3 className="font-semibold text-white mb-1">{feature.title}</h3>

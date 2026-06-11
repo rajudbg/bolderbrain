@@ -6,6 +6,7 @@ import { Brain, Globe, MessageCircle, Code2 } from "lucide-react";
 const footerLinks = {
   product: [
     { label: "Features", href: "/marketing/features" },
+    { label: "Why Us", href: "/marketing/comparison" },
     { label: "Pricing", href: "/marketing/pricing" },
     { label: "Security", href: "/marketing/security" },
     { label: "Book demo", href: "/marketing/demo" },
@@ -18,13 +19,14 @@ const footerLinks = {
   resources: [
     { label: "Platform overview", href: "/marketing" },
     { label: "Features", href: "/marketing/features" },
+    { label: "Comparison", href: "/marketing/comparison" },
     { label: "Support", href: "/marketing/demo" },
   ],
 };
 
 export function MarketingFooter() {
   return (
-    <footer className="border-t border-white/5 bg-[#0a0a0c]">
+    <footer className="border-t border-white/5 bg-[#0A0A0A]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand */}

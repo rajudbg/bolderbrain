@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#0A0A0A"/>
+  <rect x="60" y="60" width="1080" height="510" rx="24" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <path d="M500 250C460 250 430 280 430 325C430 365 460 385 475 400L500 435L525 400C540 385 570 365 570 325C570 280 540 250 500 250Z" fill="url(#og-gradient)" opacity="0.2"/>
+  <path d="M480 320C480 320 485 350 500 350C515 350 520 320 520 320" stroke="url(#og-gradient)" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+  <text font-family="Inter, sans-serif" font-size="56" font-weight="700" fill="white" x="500" y="240" text-anchor="middle" dominant-baseline="bottom">BolderBrain</text>
+  <text font-family="Inter, sans-serif" font-size="24" fill="rgba(255,255,255,0.6)" x="500" y="550" text-anchor="middle">The Only Complete Assessment Intelligence Platform</text>
+  <defs>
+    <linearGradient id="og-gradient" x1="0" y1="0" x2="1200" y2="630">
+      <stop stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -229,7 +229,9 @@ export default function DemoPage() {
                         <option value="1-50" className="bg-[#1a1a1e]">1-50 employees</option>
                         <option value="51-200" className="bg-[#1a1a1e]">51-200 employees</option>
                         <option value="201-1000" className="bg-[#1a1a1e]">201-1,000 employees</option>
-                        <option value="1000+" className="bg-[#1a1a1e]">1,000+ employees</option>
+                        <option value="1000-5000" className="bg-[#1a1a1e]">1,000-5,000 employees</option>
+                        <option value="5000-10000" className="bg-[#1a1a1e]">5,000-10,000 employees</option>
+                        <option value="10000+" className="bg-[#1a1a1e]">10,000+ employees</option>
                       </select>
                     </div>
                   </div>

@@ -104,18 +104,18 @@ const features = [
 const testimonials = [
   {
     quote: "BolderBrain transformed how we approach talent development. The AI insights save our HR team hours every week.",
-    author: "Sarah Chen",
-    role: "VP People, TechCorp",
+    author: "VP of People",
+    role: "Leading Indian IT Services Company",
   },
   {
-    quote: "Finally, a platform that connects assessments to actual development. Our completion rates increased 40%.",
-    author: "Marcus Johnson",
-    role: "Head of L&D, GlobalFin",
+    quote: "Finally, a platform that connects assessments to actual development. Our completion rates increased 40% in the first quarter.",
+    author: "Head of L&D",
+    role: "Top 5 Indian Bank",
   },
   {
-    quote: "The psychometric profiling helped us build more balanced teams. Game changer for our hiring process.",
-    author: "Elena Rodriguez",
-    role: "Chief People Officer, ScaleUp Inc",
+    quote: "The psychometric profiling helped us build more balanced teams. The integrated TNA workflow alone replaced three separate tools.",
+    author: "Chief People Officer",
+    role: "Indian Enterprise SaaS Unicorn",
   },
 ];
 
@@ -287,16 +287,16 @@ export function HomeContent() {
             >
               <Link
                 href="/marketing/demo"
-                className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold bg-white text-black hover:bg-white/90 transition-all shadow-[0_0_24px_rgba(255,255,255,0.2)]"
+                className="btn-primary px-8 py-4 text-lg shadow-[0_0_24px_rgba(99,102,241,0.3)]"
               >
                 Book a Demo
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
               <Link
-                href="/marketing/features"
-                className="glass-card inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold text-white hover:bg-white/[0.08] transition-all"
+                href="/marketing/comparison"
+                className="btn-secondary px-8 py-4 text-lg"
               >
-                Explore Features
+                See Why We&apos;re Unmatched
               </Link>
             </motion.div>
           </div>
@@ -348,10 +348,7 @@ export function HomeContent() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className={cn(
-                  "group p-6 rounded-2xl border border-white/10 bg-white/[0.03]",
-                  "hover:bg-white/[0.05] hover:border-white/20 transition-all"
-                )}
+                className="card-premium group"
               >
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <feature.icon className="h-6 w-6 text-indigo-400" />
@@ -389,10 +386,7 @@ export function HomeContent() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className={cn(
-                  "relative p-6 rounded-2xl border border-white/10 bg-white/[0.03]",
-                  "hover:bg-white/[0.05] transition-all"
-                )}
+                className="card-premium group relative"
               >
                 <div className="absolute -top-3 -left-3 h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">
                   {step.step}
@@ -445,10 +439,7 @@ export function HomeContent() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className={cn(
-                  "p-6 rounded-2xl border border-white/10 bg-white/[0.03]",
-                  "hover:bg-white/[0.05] transition-all"
-                )}
+                className="card-premium group"
               >
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mb-4">
                   <feature.icon className="h-6 w-6 text-purple-400" />
@@ -478,10 +469,7 @@ export function HomeContent() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className={cn(
-                  "p-6 rounded-2xl border border-white/10 bg-white/[0.03]",
-                  "hover:bg-white/[0.05] transition-all"
-                )}
+                className="card-premium group"
               >
                 <Quote className="h-8 w-8 text-indigo-400/50 mb-4" />
                 <p className="text-white/80 mb-6 leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
@@ -518,14 +506,10 @@ export function HomeContent() {
               </p>
               <Link
                 href="/marketing/demo"
-                className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold",
-                  "bg-white text-indigo-900",
-                  "hover:bg-white/90 transition-all"
-                )}
+                className="btn-primary px-8 py-4 text-lg"
               >
                 Schedule Your Demo
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
             </div>
           </motion.div>

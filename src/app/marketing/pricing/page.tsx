@@ -214,9 +214,9 @@ function RazorpayCheckoutButton({
         onClick={startCheckout}
         disabled={pending}
         className={cn(
-          "flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all",
+          "flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all active:scale-[0.97]",
           popular
-            ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-400 hover:to-purple-500"
+            ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-400 hover:to-purple-500 shadow-lg shadow-indigo-500/25"
             : "bg-white/10 text-white hover:bg-white/20",
           "disabled:cursor-not-allowed disabled:opacity-70"
         )}
@@ -258,10 +258,10 @@ export default function PricingPage() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               className={cn(
-                "relative flex flex-col rounded-2xl",
+                "relative flex flex-col rounded-2xl transition-all duration-300 ease-out",
                 plan.popular
-                  ? "border-2 border-indigo-500/50 bg-gradient-to-b from-indigo-500/10 to-transparent"
-                  : "border border-white/10 bg-white/[0.03]"
+                  ? "border-2 border-indigo-500/50 bg-gradient-to-b from-indigo-500/10 to-transparent hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/10"
+                  : "border border-white/10 bg-white/[0.03] hover:-translate-y-1 hover:border-white/20 hover:shadow-xl"
               )}
             >
               {plan.popular && (
@@ -317,9 +317,9 @@ export default function PricingPage() {
                   <Link
                     href={plan.href}
                     className={cn(
-                      "flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all",
+                      "flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all active:scale-[0.97]",
                       plan.popular
-                        ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-400 hover:to-purple-500"
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-400 hover:to-purple-500 shadow-lg shadow-indigo-500/25"
                         : "bg-white/10 text-white hover:bg-white/20"
                     )}
                   >
@@ -346,7 +346,7 @@ export default function PricingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="p-6 rounded-xl border border-white/5 bg-white/[0.02]"
+              className="p-6 rounded-2xl border border-white/10 bg-white/[0.03]"
             >
               <h3 className="font-semibold text-white mb-2">{faq.q}</h3>
               <p className="text-white/60 text-sm">{faq.a}</p>
