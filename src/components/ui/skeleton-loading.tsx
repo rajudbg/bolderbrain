@@ -295,18 +295,18 @@ export function TrainingPageSkeleton() {
 /** Assessments list page skeleton. */
 export function AssessmentsPageSkeleton() {
   return (
-    <div className="mx-auto max-w-3xl space-y-8 px-4 py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-2">
-          <ShimmerBlock width="12rem" height="2rem" />
-          <ShimmerBlock width="16rem" height="0.875rem" delay={50} />
+    <div className="space-y-8 p-6">
+      <div className="space-y-2">
+        <ShimmerBlock width="6rem" height="0.75rem" />
+        <ShimmerBlock width="12rem" height="2.25rem" delay={50} />
+        <ShimmerBlock width="16rem" height="1rem" delay={100} />
+      </div>
+      <CardSkeleton>
+        <div className="space-y-4">
+          <ShimmerBlock width="8rem" height="1rem" />
+          <TableRowSkeleton count={3} />
         </div>
-        <ShimmerBlock width="6rem" height="2.5rem" borderRadius="0.5rem" />
-      </div>
-      <div className="space-y-3">
-        <ShimmerBlock width="8rem" height="1rem" />
-        <TableRowSkeleton count={3} />
-      </div>
+      </CardSkeleton>
     </div>
   );
 }
