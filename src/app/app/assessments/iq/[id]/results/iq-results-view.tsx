@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,16 +43,14 @@ export function IqResultsView({
 
   async function handleExport() {
     setExporting(true);
-    const el = document.getElementById("iq-pdf-content");
-    if (el) el.classList.remove("hidden");
-    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 200)));
     try {
       const sections: { element: HTMLElement; title?: string }[] = [];
-      if (el) {
-        const cards = el.querySelectorAll("[data-pdf-card]");
-        cards.forEach((c) => sections.push({ element: c as HTMLElement }));
-      }
-      if (sections.length === 0) throw new Error("PDF content not found");
+      const el = document.getElementById("iq-pdf-content");
+      if (!el) throw new Error("PDF container not found");
+      const cards = el.querySelectorAll("[data-pdf-card]");
+      cards.forEach((c) => sections.push({ element: c as HTMLElement }));
+      if (sections.length === 0) throw new Error("No PDF content sections found");
+
       await generatePdf({
         reportTitle: "Cognitive Assessment Report",
         subjectName: templateName,
@@ -59,9 +58,9 @@ export function IqResultsView({
         filename: `cognitive-assessment_${templateName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
       });
     } catch (err) {
-      console.error("PDF export failed", err);
+      console.error("PDF export error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to generate PDF");
     } finally {
-      if (el) el.classList.add("hidden");
       setExporting(false);
     }
   }
@@ -155,8 +154,8 @@ export function IqResultsView({
         </div>
       </div>
 
-      {/* Hidden PDF content — revealed during export for html2canvas capture */}
-      <div id="iq-pdf-content" className="hidden fixed top-0 left-0 w-[820px] bg-white p-10" style={{ zIndex: -1 }}>
+      {/* PDF content — always rendered (behind main content via z-index), captured by html2canvas on export */}
+      <div id="iq-pdf-content" className="w-[820px] bg-white p-10" style={{ position: 'fixed', top: 0, left: 0, zIndex: -1 }}>
         <div data-pdf-card className="mb-8">
           <p className="text-3xl font-bold text-gray-900 mb-1">{templateName}</p>
           <p className="text-sm text-gray-500 mb-6">Cognitive Assessment Report</p>

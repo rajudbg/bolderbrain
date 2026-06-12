@@ -52,22 +52,23 @@ export async function generatePdf({
   pdf.line(pw / 2 - 30, ph / 2 + 32, pw / 2 + 30, ph / 2 + 32);
 
   // Content pages
-  for (const section of sections) {
-    const canvas = await html2canvas(section.element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-      onclone: () => {
-        const elements = section.element.querySelectorAll("[style*='color-adjust'], [style*='print-color']");
-        elements.forEach((el) => {
-          (el as HTMLElement).style.setProperty("color-adjust", "exact", "important");
-          (el as HTMLElement).style.setProperty("print-color-adjust", "exact", "important");
-        });
-      },
-    });
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    let imgData: string;
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(section.element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: true,
+      });
+      imgData = canvas.toDataURL("image/jpeg", 0.92);
+    } catch (err) {
+      console.error(`html2canvas failed for section ${i}:`, err);
+      throw new Error(`Failed to render section: ${section.title || i + 1}`);
+    }
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
     const imgW = pw - margin * 2;
     const imgH = (canvas.height * imgW) / canvas.width;
 
@@ -100,7 +101,7 @@ export async function captureElement(el: HTMLElement): Promise<string> {
     scale: 2,
     useCORS: true,
     backgroundColor: "#ffffff",
-    logging: false,
+    logging: true,
   });
   return canvas.toDataURL("image/jpeg", 0.92);
 }
