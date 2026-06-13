@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { IqCategoryKey } from "@/lib/iq-scoring";
 import { IqBellCurve } from "./iq-bell-curve";
-import { generatePdf } from "@/lib/pdf/export-pdf";
+import { generateIqPdf } from "@/lib/pdf/export-pdf";
 
 const CATEGORY_LABEL: Record<IqCategoryKey, string> = {
   verbal: "Verbal",
@@ -44,18 +44,20 @@ export function IqResultsView({
   async function handleExport() {
     setExporting(true);
     try {
-      const sections: { element: HTMLElement; title?: string }[] = [];
-      const el = document.getElementById("iq-pdf-content");
-      if (!el) throw new Error("PDF container not found");
-      const cards = el.querySelectorAll("[data-pdf-card]");
-      cards.forEach((c) => sections.push({ element: c as HTMLElement }));
-      if (sections.length === 0) throw new Error("No PDF content sections found");
-
-      await generatePdf({
-        reportTitle: "Cognitive Assessment Report",
+      generateIqPdf({
+        templateName,
         subjectName: templateName,
-        sections,
-        filename: `cognitive-assessment_${templateName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
+        standardScore: result.standardScore,
+        percentile: result.percentile,
+        ciLow: result.ciLow,
+        ciHigh: result.ciHigh,
+        categoryLabel: result.categoryLabel,
+        rawCorrectCount: result.rawCorrectCount,
+        weightedScore: result.weightedScore,
+        maxWeighted: result.maxWeighted,
+        interpretation: result.interpretation,
+        breakdownByCategory: result.breakdownByCategory,
+        passingStandardScore: passingStandardScore ?? null,
       });
     } catch (err) {
       console.error("PDF export error:", err);
@@ -66,8 +68,6 @@ export function IqResultsView({
   }
 
   return (
-    <>
-      {/* Screen view */}
       <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
         <div className="space-y-8">
           <header className="space-y-1">
@@ -154,68 +154,5 @@ export function IqResultsView({
         </div>
       </div>
 
-      {/* PDF content — always rendered (behind main content via z-index), captured by html2canvas on export */}
-      <div id="iq-pdf-content" className="w-[820px] bg-white p-10" style={{ position: 'fixed', top: 0, left: 0, zIndex: -1 }}>
-        <div data-pdf-card className="mb-8">
-          <p className="text-3xl font-bold text-gray-900 mb-1">{templateName}</p>
-          <p className="text-sm text-gray-500 mb-6">Cognitive Assessment Report</p>
-          <div className="flex items-baseline gap-4 mb-4">
-            <span className="text-5xl font-bold text-indigo-600">{Math.round(result.standardScore)}</span>
-            <div>
-              <p className="text-sm text-gray-700">Standard score (μ=100, σ=15)</p>
-              <p className="text-xs text-gray-500">
-                Higher than ~{result.percentile.toFixed(1)}% of population · 90% band: {Math.round(result.ciLow)}–{Math.round(result.ciHigh)}
-              </p>
-            </div>
-          </div>
-          <p className="text-lg font-semibold text-indigo-600 mb-1">{result.categoryLabel}</p>
-          {pass !== null && (
-            <p className={`text-sm font-medium ${pass ? "text-green-700" : "text-amber-700"}`}>
-              Screening threshold: {pass ? "Pass" : "Below"} (≥ {passingStandardScore})
-            </p>
-          )}
-          <p className="text-sm text-gray-600 mt-2">
-            {result.rawCorrectCount} correct · weighted {result.weightedScore.toFixed(2)} / {result.maxWeighted.toFixed(2)}
-          </p>
-        </div>
-
-        <div data-pdf-card className="mb-8">
-          <p className="text-base font-semibold text-gray-900 mb-3">Score distribution</p>
-          <p className="text-sm text-gray-700 mb-2">Standard score: {Math.round(result.standardScore)} (μ=100, σ=15)</p>
-          <p className="text-sm text-gray-700 mb-2">Percentile: ~{result.percentile.toFixed(1)}%</p>
-          <p className="text-sm text-gray-700 mb-2">90% confidence band: {Math.round(result.ciLow)}–{Math.round(result.ciHigh)}</p>
-          <p className="text-sm text-gray-700 mb-3">Category: {result.categoryLabel}</p>
-          {result.breakdownByCategory && (
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-gray-300">
-                  <th className="text-left font-semibold text-gray-700 py-2">Area</th>
-                  <th className="text-right font-semibold text-gray-700 py-2">Correct</th>
-                  <th className="text-right font-semibold text-gray-700 py-2">Percentile</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(Object.keys(CATEGORY_LABEL) as IqCategoryKey[]).map((key) => {
-                  const b = result.breakdownByCategory[key];
-                  if (!b || b.total === 0) return null;
-                  return (
-                    <tr key={key} className="border-b border-gray-100">
-                      <td className="py-2 text-gray-800">{CATEGORY_LABEL[key]}</td>
-                      <td className="py-2 text-right text-gray-700">{b.correct}/{b.total}</td>
-                      <td className="py-2 text-right text-gray-700">~{b.percentile.toFixed(0)}th</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        <div data-pdf-card className="mb-8">
-          <p className="text-base font-semibold text-gray-900 mb-3">Workplace interpretation</p>
-          <p className="text-sm text-gray-700 leading-relaxed">{result.interpretation}</p>
-        </div>
-      </div>
-    </>
   );
 }

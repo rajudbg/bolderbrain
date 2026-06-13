@@ -18,12 +18,12 @@ import {
   GraduationCap,
   Users,
   Flame,
+  Bot,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { AiCoachChat } from "@/components/ai/ai-coach-chat";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const employeeNav = [
@@ -36,6 +36,7 @@ const employeeNav = [
   { href: "/app/assessments/iq", label: "Cognitive (IQ)", icon: Brain },
   { href: "/app/assessments/eq", label: "EQ", icon: Heart },
   { href: "/app/assessments/psychometric", label: "Personality", icon: Sparkles },
+  { href: "/app/ai-coach", label: "AI Coach", icon: Bot },
   { href: "/app/profile", label: "Profile", icon: User },
 ];
 
@@ -75,6 +76,9 @@ function navActive(pathname: string, href: string): boolean {
   }
   if (href === "/app/assessments/psychometric") {
     return pathname === "/app/assessments/psychometric" || pathname.startsWith("/app/assessments/psychometric/");
+  }
+  if (href === "/app/ai-coach") {
+    return pathname === "/app/ai-coach";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -309,8 +313,7 @@ export function AppShell({
           </div>
         </div>
       </nav>
-      {/* AI Coach floating chat — available on all employee pages */}
-      <AiCoachChat />
+
     </div>
   );
 }

@@ -132,8 +132,9 @@ function ChatBubble({ msg }: { msg: Message }) {
   );
 }
 
-export function AiCoachChat() {
-  const [open, setOpen] = useState(false);
+export function AiCoachChat({ variant = "floating" }: { variant?: "floating" | "page" }) {
+  const isPage = variant === "page";
+  const [open, setOpen] = useState(isPage);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -207,6 +208,7 @@ export function AiCoachChat() {
   }
 
   async function toggleOpen() {
+    if (isPage) return;
     const nextOpen = !open;
     setOpen(nextOpen);
     if (nextOpen) {
@@ -268,6 +270,131 @@ export function AiCoachChat() {
     }
   }
 
+  // Initialize on mount for page mode
+  useEffect(() => {
+    if (isPage) {
+      void initializeCoach();
+    }
+  }, [isPage]);
+
+  const panelContent = (
+    <div className="flex h-full flex-col">
+      <div className="ai-aurora-bg relative flex items-center gap-3 border-b border-white/10 px-4 py-3">
+        <div className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_16px_rgba(6,182,212,0.5)]">
+          <Sparkles className="size-4 text-white" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-white/95">AI Development Coach</p>
+          <p className="text-[10px] text-cyan-400/80">Personalized from your live BolderBrain data</p>
+        </div>
+        {!isPage && (
+          <button
+            type="button"
+            onClick={() => void toggleOpen()}
+            aria-label="Close chat"
+            className="flex size-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/80"
+          >
+            <ChevronDown className="size-4" />
+          </button>
+        )}
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="flex flex-1 flex-col gap-3 overflow-y-auto p-4"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {messages.map((msg) => (
+          <ChatBubble key={msg.id} msg={msg} />
+        ))}
+
+        {loading && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2.5">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600">
+              <Loader2 className="size-3.5 animate-spin text-white" />
+            </div>
+            <div className="flex gap-1 rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.06] px-3.5 py-2.5">
+              {[0, 1, 2].map((index) => (
+                <span
+                  key={index}
+                  className="block size-1.5 animate-bounce rounded-full bg-white/40"
+                  style={{ animationDelay: `${index * 0.15}s` }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {showStarters && messages.length === 1 && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-1 flex flex-wrap gap-2">
+            {starterPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => void send(prompt)}
+                className={cn(
+                  "rounded-full border border-cyan-500/25 bg-cyan-500/5 px-3 py-1 text-xs",
+                  "text-cyan-300/80 transition-all hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:text-cyan-200",
+                )}
+              >
+                {prompt}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void send();
+        }}
+        className="flex items-center gap-2 border-t border-white/10 p-3"
+      >
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask your coach…"
+          maxLength={500}
+          disabled={loading}
+          id="ai-coach-input"
+          className={cn(
+            "flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm",
+            "text-white/90 placeholder:text-white/30 outline-none",
+            "focus:border-cyan-500/40 focus:bg-white/[0.06] transition-colors",
+            "disabled:opacity-50",
+          )}
+        />
+        <button
+          type="submit"
+          disabled={!input.trim() || loading}
+          id="ai-coach-send-btn"
+          aria-label="Send message"
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-xl transition-all",
+            "bg-gradient-to-br from-cyan-500 to-blue-600 text-white",
+            "disabled:cursor-not-allowed disabled:opacity-35",
+            "hover:shadow-[0_0_16px_rgba(6,182,212,0.4)] active:scale-95",
+          )}
+        >
+          <Send className="size-4" />
+        </button>
+      </form>
+    </div>
+  );
+
+  if (isPage) {
+    return (
+      <div
+        className="flex flex-col overflow-hidden rounded-2xl border border-cyan-500/25 bg-[#0A0A0E] shadow-[0_32px_80px_rgba(0,0,0,0.7),0_0_60px_rgba(6,182,212,0.12)]"
+        style={{ height: "min(640px,calc(100dvh - 16rem))" }}
+      >
+        {panelContent}
+      </div>
+    );
+  }
+
   return (
     <>
       <AnimatePresence>
@@ -312,106 +439,7 @@ export function AiCoachChat() {
             )}
             style={{ maxHeight: "min(480px,calc(100dvh - 6rem - env(safe-area-inset-bottom, 0px)))", height: "min(480px,calc(100dvh - 6rem - env(safe-area-inset-bottom, 0px)))" }}
           >
-            <div className="ai-aurora-bg relative flex items-center gap-3 border-b border-white/10 px-4 py-3">
-              <div className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_16px_rgba(6,182,212,0.5)]">
-                <Sparkles className="size-4 text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white/95">AI Development Coach</p>
-                <p className="text-[10px] text-cyan-400/80">Personalized from your live BolderBrain data</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void toggleOpen()}
-                aria-label="Close chat"
-                className="flex size-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/80"
-              >
-                <ChevronDown className="size-4" />
-              </button>
-            </div>
-
-            <div
-              ref={scrollRef}
-              className="flex flex-1 flex-col gap-3 overflow-y-auto p-4"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {messages.map((msg) => (
-                <ChatBubble key={msg.id} msg={msg} />
-              ))}
-
-              {loading && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2.5">
-                  <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600">
-                    <Loader2 className="size-3.5 animate-spin text-white" />
-                  </div>
-                  <div className="flex gap-1 rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.06] px-3.5 py-2.5">
-                    {[0, 1, 2].map((index) => (
-                      <span
-                        key={index}
-                        className="block size-1.5 animate-bounce rounded-full bg-white/40"
-                        style={{ animationDelay: `${index * 0.15}s` }}
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {showStarters && messages.length === 1 && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-1 flex flex-wrap gap-2">
-                  {starterPrompts.map((prompt) => (
-                    <button
-                      key={prompt}
-                      type="button"
-                      onClick={() => void send(prompt)}
-                      className={cn(
-                        "rounded-full border border-cyan-500/25 bg-cyan-500/5 px-3 py-1 text-xs",
-                        "text-cyan-300/80 transition-all hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:text-cyan-200",
-                      )}
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void send();
-              }}
-              className="flex items-center gap-2 border-t border-white/10 p-3"
-            >
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask your coach…"
-                maxLength={500}
-                disabled={loading}
-                id="ai-coach-input"
-                className={cn(
-                  "flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm",
-                  "text-white/90 placeholder:text-white/30 outline-none",
-                  "focus:border-cyan-500/40 focus:bg-white/[0.06] transition-colors",
-                  "disabled:opacity-50",
-                )}
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || loading}
-                id="ai-coach-send-btn"
-                aria-label="Send message"
-                className={cn(
-                  "flex size-9 shrink-0 items-center justify-center rounded-xl transition-all",
-                  "bg-gradient-to-br from-cyan-500 to-blue-600 text-white",
-                  "disabled:cursor-not-allowed disabled:opacity-35",
-                  "hover:shadow-[0_0_16px_rgba(6,182,212,0.4)] active:scale-95",
-                )}
-              >
-                <Send className="size-4" />
-              </button>
-            </form>
+            {panelContent}
           </motion.div>
         )}
       </AnimatePresence>

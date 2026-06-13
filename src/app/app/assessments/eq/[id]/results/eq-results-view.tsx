@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { EQ_DOMAIN_RESOURCES } from "@/lib/eq-resources";
 import { domainDisplayName, EQ_DOMAIN_KEYS, type EqDomainKey } from "@/lib/eq-domains";
 import { cn } from "@/lib/utils";
-import { generatePdf } from "@/lib/pdf/export-pdf";
+import { generateEqPdf } from "@/lib/pdf/export-pdf";
 
 const THERMAL_GRADIENT =
   "linear-gradient(to right, #1e3a8a 0%, #4f46e5 22%, #a855f7 48%, #ec4899 72%, #fb923c 100%)";
@@ -81,17 +81,20 @@ export function EqResultsView({
   const handleExport = useCallback(async () => {
     setExporting(true);
     try {
-      const sections: { element: HTMLElement; title?: string }[] = [];
-      const el = document.getElementById("eq-pdf-content");
-      if (!el) throw new Error("PDF container not found");
-      const cards = el.querySelectorAll("[data-pdf-card]");
-      cards.forEach((c) => sections.push({ element: c as HTMLElement }));
-      if (sections.length === 0) throw new Error("No PDF content found");
-      await generatePdf({
-        reportTitle: "EQ Profile Report",
+      generateEqPdf({
+        templateName,
         subjectName: templateName,
-        sections,
-        filename: `eq-profile_${templateName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
+        compositeScore: result.compositeScore,
+        percentileComposite: result.percentileComposite,
+        domainScores: result.domainScores,
+        percentileByDomain: result.percentileByDomain,
+        highestDomain: result.highestDomain,
+        lowestDomain: result.lowestDomain,
+        variance: scoreVariance(EQ_DOMAIN_KEYS.map((k) => result.domainScores[k] ?? 0)),
+        quadrantLabel: result.quadrantLabel,
+        domainKeys: EQ_DOMAIN_KEYS,
+        domainLabels: EQ_DOMAIN_KEYS.reduce((acc, k) => ({ ...acc, [k]: domainDisplayName(k) }), {} as Record<string, string>),
+        narrativeText: result.narrativeText,
       });
     } catch (err) {
       console.error("PDF export error:", err);
@@ -99,7 +102,7 @@ export function EqResultsView({
     } finally {
       setExporting(false);
     }
-  }, [templateName]);
+  }, [templateName, result]);
 
   const domainValues = useMemo(
     () => EQ_DOMAIN_KEYS.map((k) => result.domainScores[k] ?? 0),
@@ -469,80 +472,6 @@ export function EqResultsView({
         </div>
       </div>
 
-      {/* PDF content — always rendered (behind main content via z-index), captured by html2canvas on export */}
-      <div id="eq-pdf-content" className="w-[820px] bg-white p-10" style={{ position: 'fixed', top: 0, left: 0, zIndex: -1 }}>
-        <div data-pdf-card className="mb-8">
-          <p className="text-3xl font-bold text-gray-900 mb-1">{templateName}</p>
-          <p className="text-sm text-gray-500 mb-6">EQ Profile Report</p>
-          <div className="flex items-baseline gap-4 mb-4">
-            <span className="text-5xl font-bold text-amber-600">{Math.round(result.compositeScore)}</span>
-            <div>
-              <p className="text-sm text-gray-700">Composite EQ Score</p>
-              <p className="text-xs text-gray-500">~{result.percentileComposite.toFixed(0)}th percentile</p>
-            </div>
-          </div>
-          <p className="text-sm text-gray-700">Zone: {result.quadrantLabel}</p>
-        </div>
-
-        <div data-pdf-card className="mb-8">
-          <p className="text-base font-semibold text-gray-900 mb-3">Domain breakdown</p>
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-gray-300">
-                <th className="text-left font-semibold text-gray-700 py-2">Domain</th>
-                <th className="text-right font-semibold text-gray-700 py-2">Score</th>
-                <th className="text-right font-semibold text-gray-700 py-2">Percentile</th>
-              </tr>
-            </thead>
-            <tbody>
-              {EQ_DOMAIN_KEYS.map((k) => {
-                const v = result.domainScores[k] ?? 0;
-                const pct = result.percentileByDomain[k] ?? 0;
-                return (
-                  <tr key={k} className="border-b border-gray-100">
-                    <td className="py-2 text-gray-800">{domainDisplayName(k)}</td>
-                    <td className="py-2 text-right text-gray-700">{Math.round(v)}%</td>
-                    <td className="py-2 text-right text-gray-700">~{pct.toFixed(0)}th</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <div data-pdf-card className="mb-8">
-          <p className="text-base font-semibold text-gray-900 mb-3">Highlights</p>
-          <p className="text-sm text-gray-700 mb-1">Greatest strength: {domainDisplayName(result.highestDomain)}</p>
-          <p className="text-sm text-gray-700 mb-1">Growth opportunity: {domainDisplayName(result.lowestDomain)}</p>
-          <p className="text-sm text-gray-500">Balance spread: σ ≈ {variance.toFixed(1)}</p>
-        </div>
-
-        {result.narrativeText && (
-          <div data-pdf-card className="mb-8">
-            <p className="text-base font-semibold text-gray-900 mb-3">AI Coaching Narrative</p>
-            <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{result.narrativeText}</div>
-          </div>
-        )}
-
-        {prev && (
-          <div data-pdf-card className="mb-8">
-            <p className="text-base font-semibold text-gray-900 mb-3">Growth over time</p>
-            <p className="text-sm text-gray-700 mb-2">
-              Composite: {prev.compositeScore.toFixed(1)} → {result.compositeScore.toFixed(1)} ({(result.compositeScore - prev.compositeScore).toFixed(1)} points)
-            </p>
-            {EQ_DOMAIN_KEYS.map((k) => {
-              const a = prev.domainScores[k] ?? 0;
-              const b = result.domainScores[k] ?? 0;
-              if (a === b) return null;
-              return (
-                <p key={k} className="text-sm text-gray-600">
-                  {domainDisplayName(k)}: {a.toFixed(0)} → {b.toFixed(0)}
-                </p>
-              );
-            })}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
